@@ -5,5 +5,4 @@ add_library(libServer
     acceptor.hpp acceptor.cpp
     connector.hpp connector.cpp
     epoll.hpp epoll.cpp
-    buffer.hpp buffer.cpp
 )

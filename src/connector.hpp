@@ -2,10 +2,16 @@
 #define BYTETALK_CONNECTOR_HPP
 
 #include "socket.hpp"
-#include "buffer.hpp"
 
 #include <queue>
 #include <vector>
+#include <string_view>
+#include <cstdint>
+
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 namespace bt
 {
