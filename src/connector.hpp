@@ -25,8 +25,8 @@ public:
 
     void push(std::vector<char>&& buffer);
     void push(std::string_view buffer);
-
     void pop();
+    size_t queue_size() const noexcept;
 
     std::string_view read_buffer() const noexcept;
     std::string_view write_buffer() const noexcept;

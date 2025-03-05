@@ -16,7 +16,7 @@ bool connector::write_some()
 void connector::push(std::vector<char>&& buffer)
 {
     m_write_buffers_queue.push(std::move(buffer));
-    if (m_write_buffers_queue.size() > MAX_QUEUE_SIZE)
+    if (queue_size() > MAX_QUEUE_SIZE)
         pop();
 }
 
@@ -28,6 +28,11 @@ void connector::push(std::string_view buffer)
 void connector::pop()
 {
     m_write_buffers_queue.pop();
+}
+
+size_t connector::queue_size() const noexcept
+{
+    return m_write_buffers_queue.size();
 }
 
 std::string_view connector::read_buffer() const noexcept
