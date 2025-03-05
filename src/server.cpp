@@ -18,6 +18,12 @@ server::server(uint16_t port, size_t max_events)
     m_events.resize(max_events);
 }
 
+server::~server()
+{
+    for (auto& pclient : m_clients)
+        close(pclient);
+}
+
 int server::run()
 {
     m_acceptor = make_socket();

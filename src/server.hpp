@@ -24,6 +24,7 @@ public:
 
 public:
     server(uint16_t port, size_t max_events = 10000);
+    ~server();
 
     int run();
 
