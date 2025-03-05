@@ -54,7 +54,7 @@ bool connector::io_some(uint32_t& buffer_size, uint32_t& bytes, std::vector<char
 {
     if (bytes < SIZE_BYTES)
     {
-        int n = std::forward<Func>(func)(get(), reinterpret_cast<void*>(&buffer_size) + bytes, SIZE_BYTES - bytes);
+        int n = std::forward<Func>(func)(get(), reinterpret_cast<char*>(&buffer_size) + bytes, SIZE_BYTES - bytes);
         if (n < 0)
         {
             perror("io(): buffer size");
