@@ -15,6 +15,7 @@ bool connector::write_some()
 
 void connector::push(std::vector<char>&& buffer)
 {
+    m_write_buffer_size = htonl(static_cast<uint32_t>(buffer.size()));
     m_write_buffers_queue.push(std::move(buffer));
     if (queue_size() > MAX_QUEUE_SIZE)
         pop();
