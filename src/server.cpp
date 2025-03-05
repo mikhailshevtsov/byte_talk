@@ -84,49 +84,49 @@ int server::run()
                 if (!conn.set_nonblocking())
                     raise_error("fcntl()");
 
-                auto pclient = std::make_shared<client>(std::move(conn));
-                m_clients.insert(pclient);
+                auto _client = std::make_shared<client>(std::move(conn));
+                m_clients.insert(_client);
 
                 epoll_event e{};
                 e.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR;
-                e.data.ptr = pclient.get();
+                e.data.ptr = _client.get();
 
                 // add new socket to epoll instance
-                if (!m_epoll.add(pclient->get_connector().get(), &e))
+                if (!m_epoll.add(_client->get_connector().get(), &e))
                     raise_error("epoll_ctl(): add connfd");
                 
-                m_on_connect(pclient);
+                m_on_connect(_client);
         
                 continue;
             }
 
-            auto pclient = static_cast<client*>(m_events[i].data.ptr);
-            auto& conn = pclient->get_connector();
+            auto _client = static_cast<client*>(m_events[i].data.ptr);
+            auto& conn = _client->get_connector();
             if (m_events[i].events & EPOLLIN)
             {
                 if (conn.read_some())
-                    m_on_read(pclient->weak_from_this(), conn.read_buffer());
+                    m_on_read(_client->weak_from_this(), conn.read_buffer());
             }
             if (m_events[i].events & EPOLLOUT)
             {
                 if (conn.write_some())
                 {
-                    m_on_write(pclient->weak_from_this(), conn.write_buffer());
+                    m_on_write(_client->weak_from_this(), conn.write_buffer());
 
                     conn.pop();
                     if (conn.queue_size() == 0)
                     {
                         epoll_event e{};
                         e.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR;
-                        e.data.ptr = pclient;
-                        if (!m_epoll.mod(pclient->get_connector().get(), &e))
+                        e.data.ptr = _client;
+                        if (!m_epoll.mod(_client->get_connector().get(), &e))
                             raise_error("epoll_ctl(): mod connfd");
                     }                    
                 }   
             }
             if (m_events[i].events & EPOLLHUP || m_events[i].events & EPOLLRDHUP || m_events[i].events & EPOLLERR)
             {
-                close(pclient->weak_from_this());
+                close(_client->weak_from_this());
             }
         }
     }
@@ -139,31 +139,32 @@ void server::raise_error(const char* msg)
 }
 
 
-void server::write_to(std::weak_ptr<client> conn, std::string_view buffer)
+void server::write_to(std::weak_ptr<client> cl, std::string_view buf)
 {
-    auto pconn = conn.lock();
-    if (!pconn)
+    auto _client = cl.lock();
+    if (!_client)
         return;
-    pconn->get_connector().push(buffer);
+
+    _client->get_connector().push(buf);
 
     epoll_event e{};
     e.events = EPOLLIN | EPOLLOUT | EPOLLHUP | EPOLLRDHUP | EPOLLERR;
-    e.data.ptr = pconn.get();
-    if (m_epoll.mod(pconn->get_connector().get(), &e) < 0)
+    e.data.ptr = _client.get();
+    if (m_epoll.mod(_client->get_connector().get(), &e) < 0)
         raise_error("epoll_ctl(): mod connfd");
 }
 
-void server::close(std::weak_ptr<client> conn)
+void server::close(std::weak_ptr<client> cl)
 {
-    auto pconn = conn.lock();
-    if (!pconn)
+    auto _client = cl.lock();
+    if (!_client)
         return;
 
-    m_on_disconnect(conn);
+    m_on_disconnect(_client);
 
-    if (!m_epoll.del(pconn->get_connector().get()))
+    if (!m_epoll.del(_client->get_connector().get()))
         raise_error("epoll_ctl(): del connfd");
-    m_clients.erase(pconn->shared_from_this());
+    m_clients.erase(_client);
 }
 
 void server::on(event ev, const std::function<void(std::weak_ptr<client>)>& handler)
