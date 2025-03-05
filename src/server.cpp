@@ -84,7 +84,7 @@ int server::run()
                 if (!conn.set_nonblocking())
                     raise_error("fcntl()");
 
-                auto _client = std::make_shared<client>(std::move(conn));
+                auto _client = std::make_shared<client>(client(std::move(conn)));
                 m_clients.insert(_client);
 
                 epoll_event e{};

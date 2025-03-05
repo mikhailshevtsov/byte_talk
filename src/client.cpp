@@ -18,9 +18,9 @@ int client::id() const noexcept
     return m_connector.get();
 }
 
-client::client(connector&& conn, void* ctx)
+client::client(connector&& conn)
     : m_connector(std::move(conn))
-    , m_context{ctx}
+    , m_context{nullptr}
 {}
 
 connector& client::get_connector() noexcept

@@ -13,12 +13,13 @@ class client : public std::enable_shared_from_this<client>
 public:
     friend class server;
 
-    client(connector&& conn, void* ctx = nullptr);
-
     void* context() const noexcept;
     void set_context(void* ctx) noexcept;
 
     int id() const noexcept;
+
+private:
+    client(connector&& conn);
 
     connector& get_connector() noexcept;
     const connector& get_connector() const noexcept;
