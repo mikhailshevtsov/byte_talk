@@ -36,7 +36,7 @@ private:
 template <typename T>
 T* client::context() const noexcept
 {
-    return typeid(T) == m_context_type() ? m_context : nullptr;
+    return typeid(T) == m_context_type() ? static_cast<T*>(m_context) : nullptr;
 }
 
 template <typename T>
