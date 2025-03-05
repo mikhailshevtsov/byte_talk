@@ -28,6 +28,7 @@ public:
     int run();
 
     void write_to(std::weak_ptr<client> conn, std::string_view buf);
+    void close(std::weak_ptr<client> conn);
 
 private:
     static void raise_error(const char* msg);

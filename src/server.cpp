@@ -119,11 +119,7 @@ int server::run()
             }
             if (m_events[i].events & EPOLLHUP || m_events[i].events & EPOLLRDHUP || m_events[i].events & EPOLLERR)
             {
-                on_close(pclient->weak_from_this());
-
-                if (!m_epoll.del(pclient->get_connector().get()))
-                    raise_error("epoll_ctl(): del connfd");
-                m_clients.erase(pclient->shared_from_this());
+                close(pclient->weak_from_this());
             }
         }
     }
@@ -148,6 +144,17 @@ void server::write_to(std::weak_ptr<client> conn, std::string_view buffer)
     e.data.ptr = pconn.get();
     if (m_epoll.mod(pconn->get_connector().get(), &e) < 0)
         raise_error("epoll_ctl(): mod connfd");
+}
+
+void server::close(std::weak_ptr<client> conn)
+{
+    auto pconn = conn.lock();
+    if (!pconn)
+        return;
+    on_close(conn);
+    if (!m_epoll.del(pconn->get_connector().get()))
+        raise_error("epoll_ctl(): del connfd");
+    m_clients.erase(pconn->shared_from_this());
 }
 
 void server::on_connect(std::weak_ptr<client> pclient)
