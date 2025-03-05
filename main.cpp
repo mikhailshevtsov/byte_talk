@@ -7,7 +7,7 @@ int main()
     bt::server server{15000};
 
     server.on(
-        bt::server::event::connect,
+        bt::server::event::open,
         [&](std::shared_ptr<bt::client> client)
         {
             std::cout << "Connect client  " << client->id() << "\n";
@@ -32,7 +32,7 @@ int main()
     );
 
     server.on(
-        bt::server::event::disconnect,
+        bt::server::event::close,
         [&](std::shared_ptr<bt::client> client)
         {
             std::cout << "Disconnect client " << client->id() << "\n";

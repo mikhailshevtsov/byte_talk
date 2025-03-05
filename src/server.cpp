@@ -95,7 +95,8 @@ int server::run()
                 if (!m_epoll.add(_client->get_connector().get(), &e))
                     raise_error("epoll_ctl(): add connfd");
                 
-                m_on_connect(_client);
+                for (auto& handler : m_on_open)
+                    handler(_client);
         
                 continue;
             }
@@ -105,13 +106,15 @@ int server::run()
             if (m_events[i].events & EPOLLIN)
             {
                 if (conn.read_some())
-                    m_on_read(_client->shared_from_this(), conn.read_buffer());
+                    for (auto& handler : m_on_read)
+                        handler(_client->shared_from_this(), conn.read_buffer());
             }
             if (m_events[i].events & EPOLLOUT)
             {
                 if (conn.write_some())
                 {
-                    m_on_write(_client->shared_from_this(), conn.write_buffer());
+                    for (auto& handler : m_on_write)
+                        handler(_client->shared_from_this(), conn.write_buffer());
 
                     conn.pop();
                     if (conn.queue_size() == 0)
@@ -154,40 +157,15 @@ void server::write_to(std::shared_ptr<client> _client, std::string_view buf)
 
 void server::close(std::shared_ptr<client> _client)
 {
-    m_on_disconnect(_client);
+    for (auto& handler : m_on_close)
+        handler(_client);
 
     if (!m_epoll.del(_client->get_connector().get()))
         raise_error("epoll_ctl(): del connfd");
 
     auto it = m_clients.find(_client);
-    (*it)->get_connector().reset();
+    (*it)->get_connector().close();
     m_clients.erase(it);
-}
-
-void server::on(event ev, const std::function<void(std::shared_ptr<client>)>& handler)
-{
-    switch (ev)
-    {
-        case event::connect:
-            m_on_connect = handler;
-            break;
-        case event::disconnect:
-            m_on_disconnect = handler;
-            break;
-    }
-}
-
-void server::on(event ev, const std::function<void(std::shared_ptr<client>, std::string_view)>& handler)
-{
-    switch (ev)
-    {
-        case event::read:
-            m_on_read = handler;
-            break;
-        case event::write:
-            m_on_write = handler;
-            break;
-    }
 }
 
 }
