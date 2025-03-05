@@ -15,7 +15,7 @@ socket::socket() noexcept
 socket::~socket()
 {
     if (is_valid())
-        close(m_sockfd);
+        ::close(m_sockfd);
 }
 
 socket::socket(int sockfd) noexcept
@@ -54,6 +54,11 @@ void socket::reset()
 {
     socket s{};
     swap(s);
+}
+
+void socket::close()
+{
+    reset();
 }
 
 int socket::release()

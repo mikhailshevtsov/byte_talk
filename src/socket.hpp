@@ -21,6 +21,7 @@ public:
 public:
     void swap(socket& other) noexcept;
     void reset();
+    void close();
     int release();
 
 public:
