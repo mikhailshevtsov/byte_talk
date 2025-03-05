@@ -130,6 +130,8 @@ int server::run()
             }
         }
     }
+
+    return 0;
 }
 
 void server::raise_error(const char* msg)
