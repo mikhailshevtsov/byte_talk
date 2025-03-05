@@ -20,8 +20,8 @@ server::server(uint16_t port, size_t max_events)
 
 server::~server()
 {
-    for (auto& pclient : m_clients)
-        close(pclient);
+    for (auto& _client : m_clients)
+        close(_client);
 }
 
 int server::run()
@@ -105,13 +105,13 @@ int server::run()
             if (m_events[i].events & EPOLLIN)
             {
                 if (conn.read_some())
-                    m_on_read(_client->weak_from_this(), conn.read_buffer());
+                    m_on_read(_client->shared_from_this(), conn.read_buffer());
             }
             if (m_events[i].events & EPOLLOUT)
             {
                 if (conn.write_some())
                 {
-                    m_on_write(_client->weak_from_this(), conn.write_buffer());
+                    m_on_write(_client->shared_from_this(), conn.write_buffer());
 
                     conn.pop();
                     if (conn.queue_size() == 0)
@@ -126,7 +126,7 @@ int server::run()
             }
             if (m_events[i].events & EPOLLHUP || m_events[i].events & EPOLLRDHUP || m_events[i].events & EPOLLERR)
             {
-                close(_client->weak_from_this());
+                close(_client->shared_from_this());
             }
         }
     }
@@ -141,12 +141,8 @@ void server::raise_error(const char* msg)
 }
 
 
-void server::write_to(std::weak_ptr<client> cl, std::string_view buf)
+void server::write_to(std::shared_ptr<client> _client, std::string_view buf)
 {
-    auto _client = cl.lock();
-    if (!_client)
-        return;
-
     _client->get_connector().push(buf);
 
     epoll_event e{};
@@ -156,20 +152,19 @@ void server::write_to(std::weak_ptr<client> cl, std::string_view buf)
         raise_error("epoll_ctl(): mod connfd");
 }
 
-void server::close(std::weak_ptr<client> cl)
+void server::close(std::shared_ptr<client> _client)
 {
-    auto _client = cl.lock();
-    if (!_client)
-        return;
-
     m_on_disconnect(_client);
 
     if (!m_epoll.del(_client->get_connector().get()))
         raise_error("epoll_ctl(): del connfd");
-    m_clients.erase(_client);
+
+    auto it = m_clients.find(_client);
+    (*it)->get_connector().reset();
+    m_clients.erase(it);
 }
 
-void server::on(event ev, const std::function<void(std::weak_ptr<client>)>& handler)
+void server::on(event ev, const std::function<void(std::shared_ptr<client>)>& handler)
 {
     switch (ev)
     {
@@ -182,7 +177,7 @@ void server::on(event ev, const std::function<void(std::weak_ptr<client>)>& hand
     }
 }
 
-void server::on(event ev, const std::function<void(std::weak_ptr<client>, std::string_view)>& handler)
+void server::on(event ev, const std::function<void(std::shared_ptr<client>, std::string_view)>& handler)
 {
     switch (ev)
     {

@@ -8,18 +8,16 @@ int main()
 
     server.on(
         bt::server::event::connect,
-        [&](std::weak_ptr<bt::client> cl)
+        [&](std::shared_ptr<bt::client> client)
         {
-            auto client = cl.lock();
             std::cout << "Connect client  " << client->id() << "\n";
         }
     );
 
     server.on(
         bt::server::event::read,
-        [&](std::weak_ptr<bt::client> cl, std::string_view message)
+        [&](std::shared_ptr<bt::client> client, std::string_view message)
         {
-            auto client = cl.lock();
             std::cout << "Read from client " << client->id() << ": " << message << "\n";
             server.write_to(client, message);
         }
@@ -27,18 +25,16 @@ int main()
 
     server.on(
         bt::server::event::write,
-        [&](std::weak_ptr<bt::client> cl, std::string_view message)
+        [&](std::shared_ptr<bt::client> client, std::string_view message)
         {
-            auto client = cl.lock();
             std::cout << "Write to client " << client->id() << ": " << message << "\n";
         }
     );
 
     server.on(
         bt::server::event::disconnect,
-        [&](std::weak_ptr<bt::client> cl)
+        [&](std::shared_ptr<bt::client> client)
         {
-            auto client = cl.lock();
             std::cout << "Disconnect client " << client->id() << "\n";
         }
     );
