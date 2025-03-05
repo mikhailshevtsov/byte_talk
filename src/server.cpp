@@ -95,22 +95,26 @@ int server::run()
             }
 
             auto pclient = static_cast<client*>(m_events[i].data.ptr);
+            auto& conn = pclient->get_connector();
             if (m_events[i].events & EPOLLIN)
             {
-                if (pclient->get_connector().read_some())
-                    on_read(pclient->weak_from_this(), pclient->get_connector().read_buffer());
+                if (conn.read_some())
+                    on_read(pclient->weak_from_this(), conn.read_buffer());
             }
             if (m_events[i].events & EPOLLOUT)
             {
-                if (pclient->get_connector().write_some())
+                if (conn.write_some())
                 {
-                    on_write(pclient->weak_from_this(), pclient->get_connector().write_buffer());
-                    
-                    epoll_event e{};
-                    e.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR;
-                    e.data.ptr = pclient;
-                    if (!m_epoll.mod(pclient->get_connector().get(), &e))
-                        raise_error("epoll_ctl(): mod connfd");                        
+                    on_write(pclient->weak_from_this(), conn.write_buffer());
+                    conn.pop();
+                    if (conn.queue_size() == 0)
+                    {
+                        epoll_event e{};
+                        e.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR;
+                        e.data.ptr = pclient;
+                        if (!m_epoll.mod(pclient->get_connector().get(), &e))
+                            raise_error("epoll_ctl(): mod connfd");
+                    }                    
                 }   
             }
             if (m_events[i].events & EPOLLHUP || m_events[i].events & EPOLLRDHUP || m_events[i].events & EPOLLERR)
@@ -137,7 +141,7 @@ void server::write_to(std::weak_ptr<client> conn, std::string_view buffer)
     auto pconn = conn.lock();
     if (!pconn)
         return;
-    pconn->get_connector().load(buffer);
+    pconn->get_connector().push(buffer);
 
     epoll_event e{};
     e.events = EPOLLIN | EPOLLOUT | EPOLLHUP | EPOLLRDHUP | EPOLLERR;
