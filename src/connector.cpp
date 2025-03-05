@@ -44,4 +44,30 @@ std::string_view connector::write_buffer() const noexcept
     return std::string_view(m_write_buffers_queue.front().data(), m_write_buffers_queue.front().size());
 }
 
+bool connector::want_read() const noexcept
+{
+    return m_flags & read_flag;
+}
+
+bool connector::want_write() const noexcept
+{
+    return m_flags & read_flag;
+}
+
+void connector::set_want_read(bool value) noexcept
+{
+    if (value)
+        m_flags |= read_flag;
+    else
+        m_flags &= ~read_flag;
+}
+
+void connector::set_want_write(bool value) noexcept
+{
+    if (value)
+        m_flags |= write_flag;
+    else
+        m_flags &= ~read_flag;
+}
+
 }

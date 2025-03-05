@@ -37,8 +37,16 @@ public:
     std::string_view read_buffer() const noexcept;
     std::string_view write_buffer() const noexcept;
 
+    bool want_read() const noexcept;
+    bool want_write() const noexcept;
+    void set_want_read(bool value) noexcept;
+    void set_want_write(bool value) noexcept;
+
 private:
     static constexpr uint32_t SIZE_BYTES = 4;
+
+    enum { read_flag = 1 << 0, write_flag = 1 << 1 };
+    uint8_t m_flags = read_flag;
 
     std::vector<char> m_read_buffer;
     uint32_t m_read_buffer_size = 0;
