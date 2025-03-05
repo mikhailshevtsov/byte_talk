@@ -28,17 +28,15 @@ public:
 
     int run();
 
-    void write_to(std::weak_ptr<client> conn, std::string_view buf);
-    void close(std::weak_ptr<client> conn);
+    void write_to(std::weak_ptr<client> cl, std::string_view buf);
+    void close(std::weak_ptr<client> cl);
+
+    void on(event ev, const std::function<void(std::weak_ptr<client>)>& handler);
+    void on(event ev, const std::function<void(std::weak_ptr<client>, std::string_view)>& handler);
 
 private:
     static void raise_error(const char* msg);
 
-    void on_connect(std::weak_ptr<client> pclient);
-    void on_read(std::weak_ptr<client> pclient, std::string_view message);
-    void on_write(std::weak_ptr<client> pclient, std::string_view message);
-    void on_close(std::weak_ptr<client> pclient);
-    
 private:
     uint16_t m_port{};
     
@@ -47,6 +45,11 @@ private:
 
     acceptor m_acceptor{}; 
     std::unordered_set<std::shared_ptr<client>> m_clients;
+
+    std::function<void(std::weak_ptr<client>)> m_on_connect;
+    std::function<void(std::weak_ptr<client>)> m_on_disconnect;
+    std::function<void(std::weak_ptr<client>, std::string_view)> m_on_read;
+    std::function<void(std::weak_ptr<client>, std::string_view)> m_on_write;
 };
 
 }

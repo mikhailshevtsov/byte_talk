@@ -95,7 +95,7 @@ int server::run()
                 if (!m_epoll.add(pclient->get_connector().get(), &e))
                     raise_error("epoll_ctl(): add connfd");
                 
-                on_connect(pclient);
+                m_on_connect(pclient);
         
                 continue;
             }
@@ -105,13 +105,14 @@ int server::run()
             if (m_events[i].events & EPOLLIN)
             {
                 if (conn.read_some())
-                    on_read(pclient->weak_from_this(), conn.read_buffer());
+                    m_on_read(pclient->weak_from_this(), conn.read_buffer());
             }
             if (m_events[i].events & EPOLLOUT)
             {
                 if (conn.write_some())
                 {
-                    on_write(pclient->weak_from_this(), conn.write_buffer());
+                    m_on_write(pclient->weak_from_this(), conn.write_buffer());
+
                     conn.pop();
                     if (conn.queue_size() == 0)
                     {
@@ -157,45 +158,38 @@ void server::close(std::weak_ptr<client> conn)
     auto pconn = conn.lock();
     if (!pconn)
         return;
-    on_close(conn);
+
+    m_on_disconnect(conn);
+
     if (!m_epoll.del(pconn->get_connector().get()))
         raise_error("epoll_ctl(): del connfd");
     m_clients.erase(pconn->shared_from_this());
 }
 
-void server::on_connect(std::weak_ptr<client> pclient)
+void server::on(event ev, const std::function<void(std::weak_ptr<client>)>& handler)
 {
-    auto client = pclient.lock();
-    std::cout << "Connect client  " << client->get_connector().get() << "\n";
+    switch (ev)
+    {
+        case event::connect:
+            m_on_connect = handler;
+            break;
+        case event::disconnect:
+            m_on_disconnect = handler;
+            break;
+    }
 }
 
-void server::on_read(std::weak_ptr<client> pclient, std::string_view message)
+void server::on(event ev, const std::function<void(std::weak_ptr<client>, std::string_view)>& handler)
 {
-    auto client = pclient.lock();
-    std::cout << "Read from client " << client->get_connector().get() << ": ";
-    if (message.size() < 100)
-        std::cout << message;
-    else
-        std::cout << message.size() << " bytes";
-    std::cout << "\n";
-    write_to(client, message);
-}
-
-void server::on_write(std::weak_ptr<client> pclient, std::string_view message)
-{
-    auto client = pclient.lock();
-    std::cout << "Write to client " << client->get_connector().get() << ": ";
-    if (message.size() < 100)
-        std::cout << message;
-    else
-        std::cout << message.size() << " bytes";
-    std::cout << "\n";
-}
-
-void server::on_close(std::weak_ptr<client> pclient)
-{
-    auto client = pclient.lock();
-    std::cout << "Disconnect client " << client->get_connector().get() << "\n";
+    switch (ev)
+    {
+        case event::read:
+            m_on_read = handler;
+            break;
+        case event::write:
+            m_on_write = handler;
+            break;
+    }
 }
 
 }
