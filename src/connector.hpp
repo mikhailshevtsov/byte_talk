@@ -32,7 +32,6 @@ public:
     std::string_view write_buffer() const noexcept;
 
 private:
-    static constexpr uint32_t MAX_QUEUE_SIZE = 128;
     static constexpr uint32_t SIZE_BYTES = 4;
 
     std::vector<char> m_read_buffer;
