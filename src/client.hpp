@@ -13,8 +13,11 @@ class client : public std::enable_shared_from_this<client>
 public:
     friend class server;
 
-    void* context() const noexcept;
-    void set_context(void* ctx) noexcept;
+    template <typename T>
+    T* context() const noexcept;
+
+    template <typename T>
+    void set_context(T* ctx) noexcept;
 
     int id() const noexcept;
 
@@ -26,8 +29,22 @@ private:
 
 private:
     connector m_connector;
-    void* m_context{};
+    void* m_context = nullptr;
+    const std::type_info& (*m_context_type)() = []() -> const std::type_info& { return typeid(void); };
 };
+
+template <typename T>
+T* client::context() const noexcept
+{
+    return typeid(T) == m_context_type() ? m_context : nullptr;
+}
+
+template <typename T>
+void client::set_context(T* ctx) noexcept
+{
+    m_context = ctx;
+    m_context_type = []() -> const std::type_info& { return typeid(T); };
+}
 
 }
 
