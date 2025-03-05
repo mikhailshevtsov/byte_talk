@@ -33,6 +33,7 @@ public:
 
 private:
     static constexpr uint32_t MAX_QUEUE_SIZE = 128;
+    static constexpr uint32_t SIZE_BYTES = 4;
 
     std::vector<char> m_read_buffer;
     uint32_t m_read_buffer_size = 0;
@@ -48,7 +49,7 @@ bool connector::io_some(uint32_t& buffer_size, uint32_t& bytes, std::vector<char
 {
     if (bytes < SIZE_BYTES)
     {
-        int n = std::forward<Func>(func)(sockfd, reinterpret_cast<void*>(&buffer_size) + bytes, SIZE_BYTES - bytes);
+        int n = std::forward<Func>(func)(get(), reinterpret_cast<void*>(&buffer_size) + bytes, SIZE_BYTES - bytes);
         if (n < 0)
         {
             perror("io(): buffer size");
@@ -64,7 +65,7 @@ bool connector::io_some(uint32_t& buffer_size, uint32_t& bytes, std::vector<char
     else
     {
         uint32_t bytes_left = bytes - SIZE_BYTES; 
-        int n = std::forward<Func>(func)(sockfd, buffer.data() + bytes_left, buffer_size - bytes_left);
+        int n = std::forward<Func>(func)(get(), buffer.data() + bytes_left, buffer_size - bytes_left);
         if (n < 0)
         {
             perror("io(): buffer");
