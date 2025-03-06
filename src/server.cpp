@@ -80,10 +80,16 @@ int server::run()
             {
                 connector conn = m_acceptor.accept();
                 if (!conn)
-                    raise_error("accept()");
-                    
+                {
+                    perror("accept connector");
+                    return -1;
+                }
+
                 if (!conn.set_nonblocking())
-                    raise_error("fcntl()");
+                {
+                    perror("set nonblocking");
+                    return -1;
+                }
 
                 auto _client = std::make_shared<client>(client(std::move(conn)));
                 m_clients.insert(_client);
@@ -94,7 +100,10 @@ int server::run()
 
                 // add new socket to epoll instance
                 if (!m_epoll.add(_client->get_connector().get(), &e))
-                    raise_error("epoll_ctl(): add connfd");
+                {
+                    perror("epoll_ctl");
+                    return -1;
+                }
                 
                 for (auto& handler : m_on_open)
                     handler(_client);
@@ -124,7 +133,10 @@ int server::run()
                         e.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR;
                         e.data.ptr = _client;
                         if (!m_epoll.mod(_client->get_connector().get(), &e))
-                            raise_error("epoll_ctl(): mod connfd");
+                        {
+                            perror("epoll_ctl");
+                            return -1;
+                        }
                     }                    
                 }   
             }
@@ -156,7 +168,10 @@ void server::write_to(std::shared_ptr<client> _client, std::string_view buf)
     e.events = EPOLLIN | EPOLLOUT | EPOLLHUP | EPOLLRDHUP | EPOLLERR;
     e.data.ptr = _client.get();
     if (m_epoll.mod(_client->get_connector().get(), &e) < 0)
-        raise_error("epoll_ctl(): mod connfd");
+    {
+        perror("epoll_ctl");
+        return;
+    }
 }
 
 void server::close(std::shared_ptr<client> _client)
@@ -165,17 +180,14 @@ void server::close(std::shared_ptr<client> _client)
         handler(_client);
 
     if (!m_epoll.del(_client->get_connector().get()))
-        raise_error("epoll_ctl(): del connfd");
+    {
+        perror("epoll_ctl");
+        return;
+    }
 
     auto it = m_clients.find(_client);
     (*it)->get_connector().close();
     m_clients.erase(it);
-}
-
-void server::raise_error(const char* msg)
-{
-    perror(msg);
-    exit(EXIT_FAILURE);
 }
 
 }

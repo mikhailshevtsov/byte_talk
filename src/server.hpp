@@ -48,9 +48,6 @@ public:
     void on(event ev, HandlerT&& handler);
 
 private:
-    static void raise_error(const char* msg);
-
-private:
     uint16_t m_port{};
     volatile bool m_is_running = false;
     
