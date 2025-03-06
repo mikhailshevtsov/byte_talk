@@ -56,9 +56,11 @@ void socket::reset()
     swap(s);
 }
 
-void socket::close()
+int socket::close()
 {
-    reset();
+    int rv = ::close(m_sockfd);
+    m_sockfd = -1;
+    return rv;
 }
 
 int socket::release()
