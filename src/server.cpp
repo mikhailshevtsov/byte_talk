@@ -63,7 +63,8 @@ int server::run()
         return -1;
     }
 
-    while (true)
+    m_is_running = true;
+    while (m_is_running)
     {
         int nfds = m_epoll.wait(m_events.data(), m_events.size());
         if (nfds < 0)
@@ -137,12 +138,15 @@ int server::run()
     return 0;
 }
 
-void server::raise_error(const char* msg)
+void server::stop()
 {
-    perror(msg);
-    exit(EXIT_FAILURE);
+    m_is_running = false;
 }
 
+bool server::is_running() const noexcept
+{
+    return m_is_running;
+}
 
 void server::write_to(std::shared_ptr<client> _client, std::string_view buf)
 {
@@ -166,6 +170,12 @@ void server::close(std::shared_ptr<client> _client)
     auto it = m_clients.find(_client);
     (*it)->get_connector().close();
     m_clients.erase(it);
+}
+
+void server::raise_error(const char* msg)
+{
+    perror(msg);
+    exit(EXIT_FAILURE);
 }
 
 }

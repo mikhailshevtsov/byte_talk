@@ -34,6 +34,9 @@ public:
     ~server();
 
     int run();
+    void stop();
+
+    bool is_running() const noexcept;
 
     void write_to(std::shared_ptr<client> _client, std::string_view buf);
     void close(std::shared_ptr<client> _client);
@@ -49,6 +52,7 @@ private:
 
 private:
     uint16_t m_port{};
+    volatile bool m_is_running = false;
     
     epoll m_epoll{};
     std::vector<epoll_event> m_events;
