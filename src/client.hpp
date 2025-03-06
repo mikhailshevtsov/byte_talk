@@ -1,5 +1,5 @@
-#ifndef BYTETALK_USERCONNECTOR_HPP
-#define BYTETALK_USERCONNECTOR_HPP
+#ifndef BYTETALK_CLIENT_HPP
+#define BYTETALK_CLIENT_HPP
 
 #include "connector.hpp"
 
@@ -48,4 +48,4 @@ void client::set_context(T* ctx) noexcept
 
 }
 
-#endif //BYTETALK_USERCONNECTOR_HPP
+#endif //BYTETALK_CLIENT_HPP
