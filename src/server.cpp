@@ -21,7 +21,8 @@ server::server(uint16_t port, size_t max_events)
 server::~server()
 {
     for (auto& _client : m_clients)
-        close(_client);
+        for (auto& handler : m_on_close)
+            handler(_client);
 }
 
 int server::run()
@@ -81,7 +82,7 @@ int server::run()
                 connector conn = m_acceptor.accept();
                 if (!conn)
                 {
-                    perror("accept connector");
+                    perror("Accept new client");
                     return -1;
                 }
 
