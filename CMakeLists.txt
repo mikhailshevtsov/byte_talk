@@ -1,16 +1,23 @@
-cmake_minimum_required(VERSION 3.16)
-project(appServer)
-set(CMAKE_CXX_STANDARD 20)
+cmake_minimum_required(VERSION 3.28)
+project(byte_talk LANGUAGES CXX)
 
-if(NOT TARGET spdlog)
-    find_package(spdlog REQUIRED)
-endif()
+set(LIBRARY_NAME byte_talk)
 
-add_subdirectory(src)
+add_library(${LIBRARY_NAME})
+target_sources(${LIBRARY_NAME}
+    PRIVATE
+    src/server.cpp
+    src/client.cpp
+    src/socket.cpp
+    src/connector.cpp
+    src/acceptor.cpp
+    src/epoll.cpp
+)
 
-add_executable(appServer main.cpp)
+target_include_directories(${LIBRARY_NAME}
+    PUBLIC $<BUILD_LOCAL_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
-target_link_libraries(appServer libServer)
-target_include_directories(appServer PRIVATE src)
+target_include_directories(${LIBRARY_NAME}
+    PUBLIC $<BUILD_LOCAL_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 
-target_link_libraries(appServer spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32>)
+target_compile_features(${LIBRARY_NAME} PRIVATE cxx_std_20)
