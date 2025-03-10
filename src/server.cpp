@@ -228,11 +228,7 @@ void server::close(std::shared_ptr<client> _client)
     }
 
     auto it = m_clients.find(_client);
-    if (!(*it)->get_connector().close())
-    {
-        perror("socket::close");
-        exit(EXIT_FAILURE);
-    }
+    (*it)->get_connector().close();
     m_clients.erase(it);
 }
 
