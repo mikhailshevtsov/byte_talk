@@ -7,8 +7,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include <iostream>
-
 namespace bt
 {
 
@@ -31,24 +29,24 @@ int server::run()
     while (!m_acceptor && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
     if (!m_acceptor)
     {
-        perror("create acceptor");
-        return -1;
+        perror("make_socket");
+        exit(EXIT_FAILURE);
     }
 
     do m_acceptor.bind(m_port);
     while (!m_acceptor && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
     if (!m_acceptor)
     {
-        perror("bind acceptor");
-        return -1;
+        perror("acceptor::bind");
+        exit(EXIT_FAILURE);
     }
         
     do m_acceptor.listen(5);
     while (!m_acceptor && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
     if (!m_acceptor)
     {
-        perror("listen acceptor");
-        return -1;
+        perror("acceptor::listen");
+        exit(EXIT_FAILURE);
     }
 
     // create epoll instance
@@ -57,8 +55,8 @@ int server::run()
     while (!m_epoll && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
     if (!m_epoll)
     {
-        perror("create epoll");
-        return -1;
+        perror("epoll::create");
+        exit(EXIT_FAILURE);
     }
 
     // add listening socket to epoll instance
@@ -71,8 +69,8 @@ int server::run()
     while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
     if (!res)
     {
-        perror("add acceptor to epol");
-        return -1;
+        perror("epoll::add");
+        exit(EXIT_FAILURE);
     }
 
     m_is_running = true;
@@ -83,8 +81,8 @@ int server::run()
         while (nfds < 0 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
         if (nfds < 0)
         {
-            perror("wait epoll");
-            return -1;
+            perror("epoll::wait");
+            exit(EXIT_FAILURE);
         }
 
         for (int i = 0; i < nfds; ++i)
@@ -97,14 +95,14 @@ int server::run()
                 while (!conn && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
                 if (!conn)
                 {
-                    perror("Accept new client");
-                    return -1;
+                    perror("acceptor::accept");
+                    exit(EXIT_FAILURE);
                 }
 
                 if (!conn.set_nonblocking())
                 {
-                    perror("set nonblocking");
-                    return -1;
+                    perror("socket::set_nonblocking");
+                    exit(EXIT_FAILURE);
                 }
 
                 auto _client = std::make_shared<client>(client(std::move(conn)));
@@ -120,8 +118,8 @@ int server::run()
                 while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
                 if (!res)
                 {
-                    perror("epoll_ctl");
-                    return -1;
+                    perror("epoll::add");
+                    exit(EXIT_FAILURE);
                 }
                 
                 for (auto& handler : m_on_open)
@@ -141,8 +139,8 @@ int server::run()
                 else
                 if (status == connector::status::error)
                 {
-                    perror("read");
-                    return -1;
+                    perror("connector::read_some");
+                    exit(EXIT_FAILURE);
                 }
             }
             if (m_events[i].events & EPOLLOUT)
@@ -165,16 +163,16 @@ int server::run()
                         while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
                         if (!res)
                         {
-                            perror("epoll_ctl");
-                            return -1;
+                            perror("epoll::mode");
+                            exit(EXIT_FAILURE);
                         }
                     }                    
                 }
                 else
                 if (status == connector::status::error)
                 {
-                    perror("write");
-                    return -1;
+                    perror("connector::read_some");
+                    exit(EXIT_FAILURE);
                 }
             }
             if (m_events[i].events & EPOLLHUP || m_events[i].events & EPOLLRDHUP || m_events[i].events & EPOLLERR)
@@ -210,8 +208,8 @@ void server::write_to(std::shared_ptr<client> _client, std::string_view buf)
     while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
     if (!res)
     {
-        perror("epoll_ctl");
-        return;
+        perror("epoll::mod");
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -225,15 +223,15 @@ void server::close(std::shared_ptr<client> _client)
     while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
     if (!res)
     {
-        perror("epoll_ctl");
-        return;
+        perror("epoll::del");
+        exit(EXIT_FAILURE);
     }
 
     auto it = m_clients.find(_client);
     if (!(*it)->get_connector().close())
     {
-        perror("close");
-        return;
+        perror("socket::close");
+        exit(EXIT_FAILURE);
     }
     m_clients.erase(it);
 }
