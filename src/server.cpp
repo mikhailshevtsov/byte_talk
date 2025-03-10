@@ -27,20 +27,25 @@ server::~server()
 
 int server::run()
 {
-    m_acceptor = make_socket();
+    do m_acceptor = make_socket();
+    while (!m_acceptor && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
     if (!m_acceptor)
     {
         perror("create acceptor");
         return -1;
     }
 
-    if (!m_acceptor.bind(m_port))
+    do m_acceptor.bind(m_port);
+    while (!m_acceptor && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
+    if (!m_acceptor)
     {
         perror("bind acceptor");
         return -1;
     }
         
-    if (!m_acceptor.listen(5))
+    do m_acceptor.listen(5);
+    while (!m_acceptor && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
+    if (!m_acceptor)
     {
         perror("listen acceptor");
         return -1;
@@ -48,6 +53,8 @@ int server::run()
 
     // create epoll instance
     m_epoll = epoll::create();
+    do m_epoll = epoll::create();
+    while (!m_epoll && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
     if (!m_epoll)
     {
         perror("create epoll");
@@ -58,7 +65,11 @@ int server::run()
     epoll_event e{};
     e.events = EPOLLIN;
     e.data.ptr = &m_acceptor;
-    if (!m_epoll.add(m_acceptor.get(), &e))
+
+    bool res = false;
+    do res = m_epoll.add(m_acceptor.get(), &e);
+    while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
+    if (!res)
     {
         perror("add acceptor to epol");
         return -1;
@@ -67,7 +78,9 @@ int server::run()
     m_is_running = true;
     while (m_is_running)
     {
-        int nfds = m_epoll.wait(m_events.data(), m_events.size());
+        int nfds = -1;
+        do nfds = m_epoll.wait(m_events.data(), m_events.size());
+        while (nfds < 0 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
         if (nfds < 0)
         {
             perror("wait epoll");
@@ -79,7 +92,9 @@ int server::run()
             // event on listening socket
             if (m_events[i].data.ptr == &m_acceptor)
             {
-                connector conn = m_acceptor.accept();
+                connector conn;
+                do conn = m_acceptor.accept();
+                while (!conn && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
                 if (!conn)
                 {
                     perror("Accept new client");
@@ -100,7 +115,10 @@ int server::run()
                 e.data.ptr = _client.get();
 
                 // add new socket to epoll instance
-                if (!m_epoll.add(_client->get_connector().get(), &e))
+                bool res = false;
+                do res = m_epoll.add(_client->get_connector().get(), &e);
+                while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
+                if (!res)
                 {
                     perror("epoll_ctl");
                     return -1;
@@ -116,13 +134,21 @@ int server::run()
             auto& conn = _client->get_connector();
             if (m_events[i].events & EPOLLIN)
             {
-                if (conn.read_some())
+                connector::status status = conn.read_some();
+                if (status == connector::status::complete)
                     for (auto& handler : m_on_read)
                         handler(_client->shared_from_this(), conn.read_buffer());
+                else
+                if (status == connector::status::error)
+                {
+                    perror("read");
+                    return -1;
+                }
             }
             if (m_events[i].events & EPOLLOUT)
             {
-                if (conn.write_some())
+                connector::status status = conn.write_some();
+                if (status == connector::status::complete)
                 {
                     for (auto& handler : m_on_write)
                         handler(_client->shared_from_this(), conn.write_buffer());
@@ -133,13 +159,23 @@ int server::run()
                         epoll_event e{};
                         e.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR;
                         e.data.ptr = _client;
-                        if (!m_epoll.mod(_client->get_connector().get(), &e))
+
+                        bool res = false;
+                        do res = m_epoll.mod(_client->get_connector().get(), &e);
+                        while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
+                        if (!res)
                         {
                             perror("epoll_ctl");
                             return -1;
                         }
                     }                    
-                }   
+                }
+                else
+                if (status == connector::status::error)
+                {
+                    perror("write");
+                    return -1;
+                }
             }
             if (m_events[i].events & EPOLLHUP || m_events[i].events & EPOLLRDHUP || m_events[i].events & EPOLLERR)
             {
@@ -168,7 +204,11 @@ void server::write_to(std::shared_ptr<client> _client, std::string_view buf)
     epoll_event e{};
     e.events = EPOLLIN | EPOLLOUT | EPOLLHUP | EPOLLRDHUP | EPOLLERR;
     e.data.ptr = _client.get();
-    if (m_epoll.mod(_client->get_connector().get(), &e) < 0)
+
+    bool res = false;
+    do res = m_epoll.mod(_client->get_connector().get(), &e);
+    while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
+    if (!res)
     {
         perror("epoll_ctl");
         return;
@@ -180,14 +220,21 @@ void server::close(std::shared_ptr<client> _client)
     for (auto& handler : m_on_close)
         handler(_client);
 
-    if (!m_epoll.del(_client->get_connector().get()))
+    bool res = false;
+    do res = m_epoll.del(_client->get_connector().get());
+    while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
+    if (!res)
     {
         perror("epoll_ctl");
         return;
     }
 
     auto it = m_clients.find(_client);
-    (*it)->get_connector().close();
+    if (!(*it)->get_connector().close())
+    {
+        perror("close");
+        return;
+    }
     m_clients.erase(it);
 }
 

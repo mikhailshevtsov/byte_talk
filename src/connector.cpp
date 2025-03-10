@@ -3,12 +3,12 @@
 namespace bt
 {
 
-bool connector::read_some()
+connector::status connector::read_some()
 {
     return io_some(m_read_buffer_size, m_read_bytes, m_read_buffer, ::read);
 }
 
-bool connector::write_some()
+connector::status connector::write_some()
 {
     return io_some(m_write_buffer_size, m_write_bytes, m_write_buffers_queue.front(), ::write);
 }

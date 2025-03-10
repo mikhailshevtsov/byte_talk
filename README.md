@@ -1,6 +1,6 @@
 # Minimalistic asynchronous multi-user server TCP framework
 
-## Simple and convenient abstraction over the epoll event loop
+##  Description
 
 The project is essentially a simple and convenient abstraction over the epoll event loop. Thus, a byte_talk will be able to efficiently handle thousands of connections per second. Interaction with clients is based on a simple event system. The framework is object-oriented and easy to use.
 

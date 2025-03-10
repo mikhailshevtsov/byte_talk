@@ -12,22 +12,26 @@
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 
 namespace bt
 {
 
 class connector : public socket
 {
+public:
+    enum class status { complete, partial, error };
+    
 private:
     template <typename Func>
-    bool io_some(uint32_t& buffer_size, uint32_t& bytes, std::vector<char>& buffer, Func&& func);
+    status io_some(uint32_t& buffer_size, uint32_t& bytes, std::vector<char>& buffer, Func&& func);
 
 public:
     using socket::socket;
     using socket::operator=;
 
-    bool read_some();
-    bool write_some();
+    status read_some();
+    status write_some();
 
     void push(std::vector<char>&& buffer);
     void push(std::string_view buffer);
@@ -58,16 +62,13 @@ private:
 };
 
 template <typename Func>
-bool connector::io_some(uint32_t& buffer_size, uint32_t& bytes, std::vector<char>& buffer, Func&& func)
+connector::status connector::io_some(uint32_t& buffer_size, uint32_t& bytes, std::vector<char>& buffer, Func&& func)
 {
     if (bytes < SIZE_BYTES)
     {
         int n = std::forward<Func>(func)(get(), reinterpret_cast<char*>(&buffer_size) + bytes, SIZE_BYTES - bytes);
-        if (n < 0)
-        {
-            perror("io(): buffer size");
-            exit(EXIT_FAILURE);
-        }
+        if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
+            return status::error;
         bytes += n;
         if (bytes >= SIZE_BYTES)
         {
@@ -79,20 +80,16 @@ bool connector::io_some(uint32_t& buffer_size, uint32_t& bytes, std::vector<char
     {
         uint32_t bytes_left = bytes - SIZE_BYTES; 
         int n = std::forward<Func>(func)(get(), buffer.data() + bytes_left, buffer_size - bytes_left);
-        if (n < 0)
-        {
-            perror("io(): buffer");
-            exit(EXIT_FAILURE);
-        }
+        if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
+            return status::error;
         bytes += n;
-        bytes_left += n;
         if (bytes >= buffer_size)
         {
             bytes = 0;
-            return true;
+            return status::complete;
         }
     }
-    return false;
+    return status::partial;
 }
 
 }
