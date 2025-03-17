@@ -3,14 +3,14 @@
 namespace bt
 {
 
-connector::status connector::read_some()
+bool connector::read_some(bool& is_completed)
 {
-    return io_some(m_read_buffer_size, m_read_bytes, m_read_buffer, ::read);
+    return io_some(m_read_buffer_size, m_read_bytes, m_read_buffer, ::read, is_completed);
 }
 
-connector::status connector::write_some()
+bool connector::write_some(bool& is_completed)
 {
-    return io_some(m_write_buffer_size, m_write_bytes, m_write_buffers_queue.front(), ::write);
+    return io_some(m_write_buffer_size, m_write_bytes, m_write_buffers_queue.front(), ::write, is_completed);
 }
 
 void connector::push(std::vector<char>&& buffer)

@@ -19,19 +19,16 @@ namespace bt
 
 class connector : public socket
 {
-public:
-    enum class status { complete, partial, error };
-    
 private:
     template <typename Func>
-    status io_some(uint32_t& buffer_size, uint32_t& bytes, std::vector<char>& buffer, Func&& func);
+    bool io_some(uint32_t& buffer_size, uint32_t& bytes, std::vector<char>& buffer, Func&& func, bool& is_completed);
 
 public:
     using socket::socket;
     using socket::operator=;
 
-    status read_some();
-    status write_some();
+    bool read_some(bool& is_completed);
+    bool write_some(bool& is_completed);
 
     void push(std::vector<char>&& buffer);
     void push(std::string_view buffer);
@@ -62,14 +59,16 @@ private:
 };
 
 template <typename Func>
-connector::status connector::io_some(uint32_t& buffer_size, uint32_t& bytes, std::vector<char>& buffer, Func&& func)
+bool connector::io_some(uint32_t& buffer_size, uint32_t& bytes, std::vector<char>& buffer, Func&& func, bool& is_completed)
 {
+    is_completed = false;
+    int nbytes = 0;
     if (bytes < SIZE_BYTES)
     {
-        int n = std::forward<Func>(func)(get(), reinterpret_cast<char*>(&buffer_size) + bytes, SIZE_BYTES - bytes);
-        if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
-            return status::error;
-        bytes += n;
+        nbytes = std::forward<Func>(func)(get(), reinterpret_cast<char*>(&buffer_size) + bytes, SIZE_BYTES - bytes);
+        if (nbytes < 0)
+            return false;
+        bytes += nbytes;
         if (bytes >= SIZE_BYTES)
         {
             buffer_size = ntohl(buffer_size);
@@ -79,17 +78,17 @@ connector::status connector::io_some(uint32_t& buffer_size, uint32_t& bytes, std
     else
     {
         uint32_t bytes_left = bytes - SIZE_BYTES; 
-        int n = std::forward<Func>(func)(get(), buffer.data() + bytes_left, buffer_size - bytes_left);
-        if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
-            return status::error;
-        bytes += n;
+        nbytes = std::forward<Func>(func)(get(), buffer.data() + bytes_left, buffer_size - bytes_left);
+        if (nbytes < 0)
+            return false;
+        bytes += nbytes;
         if (bytes >= buffer_size)
         {
             bytes = 0;
-            return status::complete;
+            is_completed = true;
         }
     }
-    return status::partial;
+    return true;
 }
 
 }

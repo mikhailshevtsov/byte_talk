@@ -132,21 +132,31 @@ int server::run()
             auto& conn = _client->get_connector();
             if (m_events[i].events & EPOLLIN)
             {
-                connector::status status = conn.read_some();
-                if (status == connector::status::complete)
-                    for (auto& handler : m_on_read)
-                        handler(_client->shared_from_this(), conn.read_buffer());
-                else
-                if (status == connector::status::error)
+                bool status = false;
+                bool res = false;
+                do res = conn.read_some(status);
+                while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
+                if (!res )
                 {
                     perror("connector::read_some");
                     exit(EXIT_FAILURE);
                 }
+                if (status)
+                    for (auto& handler : m_on_read)
+                        handler(_client->shared_from_this(), conn.read_buffer());
             }
             if (m_events[i].events & EPOLLOUT)
             {
-                connector::status status = conn.write_some();
-                if (status == connector::status::complete)
+                bool status = false;
+                bool res = false;
+                do res = conn.write_some(status);
+                while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
+                if (!res)
+                {
+                    perror("connector::write_some");
+                    exit(EXIT_FAILURE);
+                }
+                if (status)
                 {
                     for (auto& handler : m_on_write)
                         handler(_client->shared_from_this(), conn.write_buffer());
@@ -167,12 +177,6 @@ int server::run()
                             exit(EXIT_FAILURE);
                         }
                     }                    
-                }
-                else
-                if (status == connector::status::error)
-                {
-                    perror("connector::read_some");
-                    exit(EXIT_FAILURE);
                 }
             }
             if (m_events[i].events & EPOLLHUP || m_events[i].events & EPOLLRDHUP || m_events[i].events & EPOLLERR)
