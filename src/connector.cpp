@@ -10,12 +10,18 @@ bool connector::read_some(bool& is_completed)
 
 bool connector::write_some(bool& is_completed)
 {
-    return io_some(m_write_buffer_size, m_write_bytes, m_write_buffers_queue.front(), ::write, is_completed);
+    if (!m_write_buffers_queue.empty())
+    {
+        if (m_write_buffer_size == 0)
+            m_write_buffer_size = htonl(static_cast<uint32_t>(m_write_buffers_queue.front().size()));
+        return io_some(m_write_buffer_size, m_write_bytes, m_write_buffers_queue.front(), ::write, is_completed);
+    }
+    else
+        return false;
 }
 
 void connector::push(std::vector<char>&& buffer)
 {
-    m_write_buffer_size = htonl(static_cast<uint32_t>(buffer.size()));
     m_write_buffers_queue.push(std::move(buffer));
 }
 
