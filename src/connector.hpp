@@ -29,7 +29,6 @@ public:
     bool read_some(bool& is_completed);
     bool write_some(bool& is_completed);
 
-    void push(std::vector<char>&& buffer);
     void push(std::string_view buffer);
 
     std::string_view read_buffer() const noexcept;

@@ -13,16 +13,9 @@ bool connector::write_some(bool& is_completed)
     return io_some(m_write_buffer_size, m_write_bytes, m_write_buffer, ::write, is_completed);
 }
 
-void connector::push(std::vector<char>&& buffer)
-{
-    m_write_buffer = std::move(buffer);
-    m_write_buffer_size = htonl(static_cast<uint32_t>(m_write_buffer.size()));
-    m_write_bytes = 0;
-}
-
 void connector::push(std::string_view buffer)
 {
-    m_write_buffer.resize(std::size(buffer));
+    m_write_buffer.resize(buffer.size());
     std::copy(std::cbegin(buffer), std::cend(buffer), std::begin(m_write_buffer));
     m_write_buffer_size = htonl(static_cast<uint32_t>(m_write_buffer.size()));
     m_write_bytes = 0;
