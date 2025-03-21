@@ -3,7 +3,6 @@
 
 #include "socket.hpp"
 
-#include <queue>
 #include <vector>
 #include <string_view>
 #include <cstdint>
@@ -32,8 +31,6 @@ public:
 
     void push(std::vector<char>&& buffer);
     void push(std::string_view buffer);
-    void pop();
-    size_t queue_size() const noexcept;
 
     std::string_view read_buffer() const noexcept;
     std::string_view write_buffer() const noexcept;
@@ -53,7 +50,7 @@ private:
     uint32_t m_read_buffer_size = 0;
     uint32_t m_read_bytes = 0;
 
-    std::queue<std::vector<char>> m_write_buffers_queue;
+    std::vector<char> m_write_buffer;
     uint32_t m_write_buffer_size = 0;
     uint32_t m_write_bytes = 0;
 };

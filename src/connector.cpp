@@ -10,34 +10,22 @@ bool connector::read_some(bool& is_completed)
 
 bool connector::write_some(bool& is_completed)
 {
-    if (!m_write_buffers_queue.empty())
-    {
-        if (m_write_buffer_size == 0)
-            m_write_buffer_size = htonl(static_cast<uint32_t>(m_write_buffers_queue.front().size()));
-        return io_some(m_write_buffer_size, m_write_bytes, m_write_buffers_queue.front(), ::write, is_completed);
-    }
-    else
-        return false;
+    return io_some(m_write_buffer_size, m_write_bytes, m_write_buffer, ::write, is_completed);
 }
 
 void connector::push(std::vector<char>&& buffer)
 {
-    m_write_buffers_queue.push(std::move(buffer));
+    m_write_buffer = std::move(buffer);
+    m_write_buffer_size = htonl(static_cast<uint32_t>(m_write_buffer.size()));
+    m_write_bytes = 0;
 }
 
 void connector::push(std::string_view buffer)
 {
-    push(std::vector<char>(std::cbegin(buffer), std::cend(buffer)));
-}
-
-void connector::pop()
-{
-    m_write_buffers_queue.pop();
-}
-
-size_t connector::queue_size() const noexcept
-{
-    return m_write_buffers_queue.size();
+    m_write_buffer.resize(std::size(buffer));
+    std::copy(std::cbegin(buffer), std::cend(buffer), std::begin(m_write_buffer));
+    m_write_buffer_size = htonl(static_cast<uint32_t>(m_write_buffer.size()));
+    m_write_bytes = 0;
 }
 
 std::string_view connector::read_buffer() const noexcept
@@ -47,7 +35,7 @@ std::string_view connector::read_buffer() const noexcept
 
 std::string_view connector::write_buffer() const noexcept
 {
-    return std::string_view(m_write_buffers_queue.front().data(), m_write_buffers_queue.front().size());
+    return std::string_view(m_write_buffer.data(), m_write_buffer.size());
 }
 
 bool connector::want_read() const noexcept

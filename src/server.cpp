@@ -161,22 +161,18 @@ int server::run()
                     for (auto& handler : m_on_write)
                         handler(_client->shared_from_this(), conn.write_buffer());
 
-                    conn.pop();
-                    if (conn.queue_size() == 0)
-                    {
-                        epoll_event e{};
-                        e.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR;
-                        e.data.ptr = _client;
+                    epoll_event e{};
+                    e.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR;
+                    e.data.ptr = _client;
 
-                        bool res = false;
-                        do res = m_epoll.mod(_client->get_connector().get(), &e);
-                        while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
-                        if (!res)
-                        {
-                            perror("epoll::mode");
-                            exit(EXIT_FAILURE);
-                        }
-                    }                    
+                    bool res = false;
+                    do res = m_epoll.mod(_client->get_connector().get(), &e);
+                    while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
+                    if (!res)
+                    {
+                        perror("epoll::mode");
+                        exit(EXIT_FAILURE);
+                    }
                 }
             }
             if (m_events[i].events & EPOLLHUP || m_events[i].events & EPOLLRDHUP || m_events[i].events & EPOLLERR)
