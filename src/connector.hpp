@@ -80,7 +80,7 @@ bool connector::io_some(buffer& buf, Func&& func, bool& is_completed)
         if (nbytes < 0)
             return false;
         buf.bytes += nbytes;
-        if (buf.bytes >= buf.size)
+        if (buf.bytes - SIZE_BYTES >= buf.size)
         {
             buf.bytes = buf.size = 0;
             is_completed = true;

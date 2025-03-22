@@ -28,12 +28,12 @@ bool connector::push(std::string_view buffer)
 
 std::string_view connector::read_buffer() const noexcept
 {
-    return std::string_view(m_read_buffer.storage.data(), m_read_buffer.size);
+    return std::string_view(m_read_buffer.storage.data(), m_read_buffer.storage.size());
 }
 
 std::string_view connector::write_buffer() const noexcept
 {
-    return std::string_view(m_write_buffer.storage.data(), m_write_buffer.size);
+    return std::string_view(m_write_buffer.storage.data(), m_write_buffer.storage.size());
 }
 
 bool connector::want_read() const noexcept
