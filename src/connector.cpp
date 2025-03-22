@@ -5,30 +5,35 @@ namespace bt
 
 bool connector::read_some(bool& is_completed)
 {
-    return io_some(m_read_buffer_size, m_read_bytes, m_read_buffer, ::read, is_completed);
+    return io_some(m_read_buffer, ::read, is_completed);
 }
 
 bool connector::write_some(bool& is_completed)
 {
-    return io_some(m_write_buffer_size, m_write_bytes, m_write_buffer, ::write, is_completed);
+    return io_some(m_write_buffer, ::write, is_completed);
 }
 
-void connector::push(std::string_view buffer)
+bool connector::push(std::string_view buffer)
 {
-    m_write_buffer.resize(buffer.size());
-    std::copy(std::cbegin(buffer), std::cend(buffer), std::begin(m_write_buffer));
-    m_write_buffer_size = htonl(static_cast<uint32_t>(m_write_buffer.size()));
-    m_write_bytes = 0;
+    if (m_write_buffer.size > 0)
+        return false;
+
+    m_write_buffer.storage.resize(buffer.size());
+    std::copy(std::cbegin(buffer), std::cend(buffer), std::begin(m_write_buffer.storage));
+    m_write_buffer.size = htonl(static_cast<uint32_t>(buffer.size()));
+    m_write_buffer.bytes = 0;
+
+    return true;
 }
 
 std::string_view connector::read_buffer() const noexcept
 {
-    return std::string_view(m_read_buffer.data(), m_read_buffer.size());
+    return std::string_view(m_read_buffer.storage.data(), m_read_buffer.size);
 }
 
 std::string_view connector::write_buffer() const noexcept
 {
-    return std::string_view(m_write_buffer.data(), m_write_buffer.size());
+    return std::string_view(m_write_buffer.storage.data(), m_write_buffer.size);
 }
 
 bool connector::want_read() const noexcept

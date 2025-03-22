@@ -38,7 +38,7 @@ public:
 
     bool is_running() const noexcept;
 
-    void write_to(std::shared_ptr<client> _client, std::string_view buf);
+    bool write_to(std::shared_ptr<client> _client, std::string_view buffer);
     void close(std::shared_ptr<client> _client);
 
     template <open_close_handler HandlerT>

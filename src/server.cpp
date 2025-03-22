@@ -195,9 +195,10 @@ bool server::is_running() const noexcept
     return m_is_running;
 }
 
-void server::write_to(std::shared_ptr<client> _client, std::string_view buf)
+bool server::write_to(std::shared_ptr<client> _client, std::string_view buffer)
 {
-    _client->get_connector().push(buf);
+    if (!_client->get_connector().push(buffer))
+        return false;
 
     epoll_event e{};
     e.events = EPOLLIN | EPOLLOUT | EPOLLHUP | EPOLLRDHUP | EPOLLERR;
@@ -211,6 +212,8 @@ void server::write_to(std::shared_ptr<client> _client, std::string_view buf)
         perror("epoll::mod");
         exit(EXIT_FAILURE);
     }
+
+    return true;
 }
 
 void server::close(std::shared_ptr<client> _client)

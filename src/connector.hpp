@@ -19,8 +19,15 @@ namespace bt
 class connector : public socket
 {
 private:
+    struct buffer
+    {
+        std::vector<char> storage;
+        uint32_t size = 0;
+        uint32_t bytes = 0;
+    };
+
     template <typename Func>
-    bool io_some(uint32_t& buffer_size, uint32_t& bytes, std::vector<char>& buffer, Func&& func, bool& is_completed);
+    bool io_some(buffer& buf, Func&& func, bool& is_completed);
 
 public:
     using socket::socket;
@@ -29,7 +36,7 @@ public:
     bool read_some(bool& is_completed);
     bool write_some(bool& is_completed);
 
-    void push(std::string_view buffer);
+    bool push(std::string_view buffer);
 
     std::string_view read_buffer() const noexcept;
     std::string_view write_buffer() const noexcept;
@@ -45,42 +52,37 @@ private:
     enum { read_flag = 1 << 0, write_flag = 1 << 1 };
     uint8_t m_flags = read_flag;
 
-    std::vector<char> m_read_buffer;
-    uint32_t m_read_buffer_size = 0;
-    uint32_t m_read_bytes = 0;
-
-    std::vector<char> m_write_buffer;
-    uint32_t m_write_buffer_size = 0;
-    uint32_t m_write_bytes = 0;
+    buffer m_read_buffer;
+    buffer m_write_buffer;
 };
 
 template <typename Func>
-bool connector::io_some(uint32_t& buffer_size, uint32_t& bytes, std::vector<char>& buffer, Func&& func, bool& is_completed)
+bool connector::io_some(buffer& buf, Func&& func, bool& is_completed)
 {
     is_completed = false;
     int nbytes = 0;
-    if (bytes < SIZE_BYTES)
+    if (buf.bytes < SIZE_BYTES)
     {
-        nbytes = std::forward<Func>(func)(get(), reinterpret_cast<char*>(&buffer_size) + bytes, SIZE_BYTES - bytes);
+        nbytes = std::forward<Func>(func)(get(), reinterpret_cast<char*>(&buf.size) + buf.bytes, SIZE_BYTES - buf.bytes);
         if (nbytes < 0)
             return false;
-        bytes += nbytes;
-        if (bytes >= SIZE_BYTES)
+        buf.bytes += nbytes;
+        if (buf.bytes >= SIZE_BYTES)
         {
-            buffer_size = ntohl(buffer_size);
-            buffer.resize(buffer_size);
+            buf.size = ntohl(buf.size);
+            buf.storage.resize(buf.size);
         }
     }
     else
     {
-        uint32_t bytes_left = bytes - SIZE_BYTES; 
-        nbytes = std::forward<Func>(func)(get(), buffer.data() + bytes_left, buffer_size - bytes_left);
+        uint32_t bytes_left = buf.bytes - SIZE_BYTES; 
+        nbytes = std::forward<Func>(func)(get(), buf.storage.data() + bytes_left, buf.size - bytes_left);
         if (nbytes < 0)
             return false;
-        bytes += nbytes;
-        if (bytes >= buffer_size)
+        buf.bytes += nbytes;
+        if (buf.bytes >= buf.size)
         {
-            bytes = 0;
+            buf.bytes = buf.size = 0;
             is_completed = true;
         }
     }
