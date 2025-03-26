@@ -8,7 +8,7 @@
 namespace bt
 {
 
-bool acceptor::bind(uint16_t port) noexcept
+bool acceptor::bind(short port) const noexcept
 {
     sockaddr_in addr{};
     addr.sin_family = AF_INET;
@@ -17,12 +17,12 @@ bool acceptor::bind(uint16_t port) noexcept
     return ::bind(get(), (sockaddr*)&addr, sizeof(addr)) >= 0;
 }
 
-bool acceptor::listen(int backlog) noexcept
+bool acceptor::listen(int backlog) const noexcept
 {
     return ::listen(get(), backlog) >= 0;
 }
 
-connector acceptor::accept()
+connector acceptor::accept() const noexcept
 {
     sockaddr_in addr{};
     socklen_t addrlen{};

@@ -9,8 +9,8 @@ target_sources(${LIBRARY_NAME}
     src/server.cpp
     src/client.cpp
     src/socket.cpp
-    src/connector.cpp
     src/acceptor.cpp
+    src/connector.cpp
     src/epoll.cpp
 )
 

@@ -13,18 +13,15 @@ class epoll : public socket
 public:
     using socket::socket;
     using socket::operator=;
-    static epoll create();
+    static epoll create() noexcept;
 
 public:
-    bool add(int sockfd, epoll_event* e);
-    bool mod(int sockfd, epoll_event* e);
-    bool del(int sockfd);
+    bool add(int sockfd, epoll_event* e) const noexcept;
+    bool mod(int sockfd, epoll_event* e) const noexcept;
+    bool del(int sockfd) const noexcept;
+    bool ctl(int op, int sockfd, epoll_event* e = nullptr) const noexcept;
 
-private:
-    bool ctl(int op, int sockfd, epoll_event* e = nullptr);
-
-public:
-    int wait(epoll_event* events, int max_events);
+    int wait(epoll_event* events, int max_events) const noexcept;
 };
 
 }

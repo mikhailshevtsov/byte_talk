@@ -9,7 +9,7 @@ class socket
 {
 public:
     socket() noexcept;
-    ~socket();
+    ~socket() noexcept;
     explicit socket(int sockfd) noexcept;
 
     socket(socket&& other) noexcept;
@@ -20,9 +20,9 @@ public:
 
 public:
     void swap(socket& other) noexcept;
-    void reset();
-    int close();
-    int release();
+    void reset() noexcept;
+    int close() noexcept;
+    int release() noexcept;
 
 public:
     int get() const noexcept;
@@ -38,7 +38,7 @@ private:
     int m_sockfd = -1;
 };
 
-socket make_socket();
+socket make_socket() noexcept;
 
 struct nullsock_t
 {

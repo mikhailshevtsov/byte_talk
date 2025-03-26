@@ -12,7 +12,7 @@ socket::socket() noexcept
     : m_sockfd{-1}
 {}
 
-socket::~socket()
+socket::~socket() noexcept
 {
     if (is_valid())
         ::close(m_sockfd);
@@ -50,20 +50,20 @@ bool socket::set_nonblocking() noexcept
     return fcntl(m_sockfd, F_SETFL, flags | O_NONBLOCK) >= 0;
 }
 
-void socket::reset()
+void socket::reset() noexcept
 {
     socket s{};
     swap(s);
 }
 
-int socket::close()
+int socket::close() noexcept
 {
     int rv = ::close(m_sockfd);
     m_sockfd = -1;
     return rv;
 }
 
-int socket::release()
+int socket::release() noexcept
 {
     return std::exchange(m_sockfd, -1);
 }
@@ -78,7 +78,7 @@ bool socket::is_valid() const noexcept
     return m_sockfd >= 0;
 }
 
-socket make_socket()
+socket make_socket() noexcept
 {
     int sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd >= 0)

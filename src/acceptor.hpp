@@ -4,8 +4,6 @@
 #include "socket.hpp"
 #include "connector.hpp"
 
-#include <cstdint>
-
 namespace bt
 {
 
@@ -15,10 +13,10 @@ public:
     using socket::socket;
     using socket::operator=;
 
-    bool bind(uint16_t port) noexcept;
-    bool listen(int backlog) noexcept;
+    bool bind(short port) const noexcept;
+    bool listen(int backlog) const noexcept;
 
-    connector accept();
+    connector accept() const noexcept;
 };
 
 }
