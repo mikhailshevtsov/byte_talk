@@ -4,14 +4,13 @@
 #include "acceptor.hpp"
 #include "epoll.hpp"
 #include "client.hpp"
+#include "buffer.hpp"
 
 #include <boost/signals2.hpp>
 #include <string_view>
 #include <vector>
 #include <unordered_set>
 #include <memory>
-
-#include <sys/epoll.h>
 
 namespace bt
 {
@@ -21,8 +20,8 @@ class server
 public:
     boost::signals2::signal<void(server&, client&)> on_open;
     boost::signals2::signal<void(server&, client&)> on_close;
-    boost::signals2::signal<void(server&, client&, std::string_view)> on_read;
-    boost::signals2::signal<void(server&, client&, std::string_view)> on_write;
+    boost::signals2::signal<void(server&, client&, buffer)> on_read;
+    boost::signals2::signal<void(server&, client&, buffer)> on_write;
 
 public:
     server(short port, size_t max_events = 10000);
@@ -33,7 +32,7 @@ public:
 
     bool is_running() const noexcept;
 
-    bool write_to(client& _client, std::string_view buffer);
+    bool write_to(client& _client, buffer _buffer);
     void close(client& _client);
 
 private:

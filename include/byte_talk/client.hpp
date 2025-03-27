@@ -2,7 +2,9 @@
 #define BYTETALK_CLIENT_HPP
 
 #include "connector.hpp"
-#include "byte_talk/streamer.hpp"
+#include "buffer.hpp"
+#include "stream_handler.hpp"
+
 
 #include <memory>
 #include <any>
@@ -29,8 +31,8 @@ public:
 
     void set_context(std::any context);
 
-    boost::signals2::signal<void(server&, client&, std::string_view)> on_read;
-    boost::signals2::signal<void(server&, client&, std::string_view)> on_write;
+    boost::signals2::signal<void(server&, client&, buffer)> on_read;
+    boost::signals2::signal<void(server&, client&, buffer)> on_write;
 
     std::weak_ptr<client> ptr() noexcept;
 
