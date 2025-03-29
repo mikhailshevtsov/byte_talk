@@ -2,8 +2,6 @@
 
 #include <unistd.h>
 
-#include <iostream>
-
 namespace bt
 {
 

@@ -5,7 +5,6 @@
 #include "buffer.hpp"
 #include "stream_handler.hpp"
 
-
 #include <memory>
 #include <any>
 #include <boost/signals2.hpp>
@@ -13,34 +12,18 @@
 namespace bt
 {
     
-
-class client : public std::enable_shared_from_this<client>
+struct client : public std::enable_shared_from_this<client>
 {
 public:
-    client(connector&& conn) noexcept;
+    bt::connector connector;
+    std::unique_ptr<bt::reader> reader{};
+    std::unique_ptr<bt::writer> writer{};
+    std::any context;
 
-    const connector& get_connector() const noexcept;
-
-    const std::unique_ptr<reader>& get_reader() const noexcept;
-    void set_reader(std::unique_ptr<reader> reader) noexcept;
-
-    const std::unique_ptr<writer>& get_writer() const noexcept;
-    void set_writer(std::unique_ptr<writer> writer) noexcept;
-
-    const std::any& get_context() const noexcept;
-
-    void set_context(std::any context);
+    client(bt::connector&& conn) noexcept;
 
     boost::signals2::signal<void(server&, client&, buffer)> on_read;
     boost::signals2::signal<void(server&, client&, buffer)> on_write;
-
-    std::weak_ptr<client> ptr() noexcept;
-
-private:
-    connector m_conn;
-    std::unique_ptr<reader> m_reader{};
-    std::unique_ptr<writer> m_writer{};
-    std::any m_context;
 };
 
 }

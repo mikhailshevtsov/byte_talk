@@ -1,4 +1,4 @@
-#include "byte_talk/server.hpp"
+#include <byte_talk/server.hpp>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -117,7 +117,7 @@ int server::run()
 
                 // add new socket to epoll instance
                 bool res = false;
-                do res = m_epoll.add(_client->get_connector().get(), &e);
+                do res = m_epoll.add(_client->connector.get(), &e);
                 while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
                 if (!res)
                 {
@@ -133,10 +133,10 @@ int server::run()
             auto _client = static_cast<client*>(m_events[i].data.ptr);
 
             // input event
-            if (m_events[i].events & EPOLLIN)
+            if (m_events[i].events & EPOLLIN && _client->reader && _client->reader->is_open())
             {
                 bool res = false;
-                do res = _client->get_reader()->handle(*this, *_client);
+                do res = _client->reader->handle(*this, *_client);
                 while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
                 if (!res )
                 {
@@ -145,24 +145,24 @@ int server::run()
                 }
             }
             // output event
-            if (m_events[i].events & EPOLLOUT)
+            if (m_events[i].events & EPOLLOUT && _client->writer && _client->writer->is_open())
             {
                 bool res = false;
-                do res = _client->get_writer()->handle(*this, *_client);
+                do res = _client->writer->handle(*this, *_client);
                 while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
                 if (!res)
                 {
                     perror("connector::write");
                     exit(EXIT_FAILURE);
                 }
-                if (_client->get_writer()->done())
+                if (!_client->writer->is_open())
                 {
                     epoll_event e{};
                     e.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR;
                     e.data.ptr = _client;
 
                     bool res = false;
-                    do res = m_epoll.mod(_client->get_connector().get(), &e);
+                    do res = m_epoll.mod(_client->connector.get(), &e);
                     while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
                     if (!res)
                     {
@@ -194,7 +194,7 @@ bool server::is_running() const noexcept
 
 bool server::write_to(client& _client, buffer _buffer)
 {
-    if (!_client.get_writer()->write(_buffer))
+    if (!_client.writer->write(_buffer))
         return false;
 
     epoll_event e{};
@@ -202,7 +202,7 @@ bool server::write_to(client& _client, buffer _buffer)
     e.data.ptr = &_client;
 
     bool res = false;
-    do res = m_epoll.mod(_client.get_connector().get(), &e);
+    do res = m_epoll.mod(_client.connector.get(), &e);
     while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
     if (!res)
     {
@@ -218,7 +218,7 @@ void server::close(client& _client)
     on_close(*this, _client);
 
     bool res = false;
-    do res = m_epoll.del(_client.get_connector().get());
+    do res = m_epoll.del(_client.connector.get());
     while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
     if (!res)
     {
