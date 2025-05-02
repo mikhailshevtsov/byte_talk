@@ -20,8 +20,8 @@ class server
 public:
     boost::signals2::signal<void(server&, client&)> opened;
     boost::signals2::signal<void(server&, client&)> closed;
-    boost::signals2::signal<void(server&, client&, buffer)> readyRead;
-    boost::signals2::signal<void(server&, client&, buffer)> readyWrite;
+    boost::signals2::signal<void(server&, client&, buffer)> ready_read;
+    boost::signals2::signal<void(server&, client&, buffer)> ready_write;
 
 public:
     server(uint16_t port, size_t max_events = 10000);

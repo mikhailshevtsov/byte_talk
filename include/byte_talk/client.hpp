@@ -21,8 +21,8 @@ struct client : public std::enable_shared_from_this<client>
 
     client(bt::connector&& conn) noexcept;
 
-    boost::signals2::signal<void(server&, client&, buffer)> readyRead;
-    boost::signals2::signal<void(server&, client&, buffer)> readyWrite;
+    boost::signals2::signal<void(server&, client&, buffer)> ready_read;
+    boost::signals2::signal<void(server&, client&, buffer)> ready_write;
 };
 
 }
