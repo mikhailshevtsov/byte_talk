@@ -12,6 +12,7 @@ target_sources(${LIBRARY_NAME}
     src/acceptor.cpp
     src/connector.cpp
     src/epoll.cpp
+    src/common_stream_handlers.cpp
 )
 
 target_include_directories(${LIBRARY_NAME}
