@@ -1,7 +1,7 @@
 #ifndef BYTETALK_STREAMHANDLER_HPP
 #define BYTETALK_STREAMHANDLER_HPP
 
-#include "buffer.hpp"
+#include <string>
 
 namespace bt
 {
@@ -30,7 +30,7 @@ class reader : public stream_handler {};
 class writer : public stream_handler
 {
 public:
-    virtual bool write(buffer _buffer) = 0;
+    virtual bool write(const std::string& _message) = 0;
 };
 
 }

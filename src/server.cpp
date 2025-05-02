@@ -192,9 +192,9 @@ bool server::is_running() const noexcept
     return m_is_running;
 }
 
-bool server::write_to(client& _client, buffer _buffer)
+bool server::write_to(client& _client, const std::string& _message)
 {
-    if (!_client.writer->write(_buffer))
+    if (!_client.writer->write(_message))
         return false;
 
     epoll_event e{};

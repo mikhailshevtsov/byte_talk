@@ -2,7 +2,6 @@
 #define BYTETALK_CLIENT_HPP
 
 #include "connector.hpp"
-#include "buffer.hpp"
 #include "stream_handler.hpp"
 
 #include <memory>
@@ -21,8 +20,8 @@ struct client : public std::enable_shared_from_this<client>
 
     client(bt::connector&& conn) noexcept;
 
-    boost::signals2::signal<void(server&, client&, buffer)> ready_read;
-    boost::signals2::signal<void(server&, client&, buffer)> ready_write;
+    boost::signals2::signal<void(server&, client&, std::string)> message_received;
+    boost::signals2::signal<void(server&, client&, std::string)> message_written;
 };
 
 }

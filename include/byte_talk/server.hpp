@@ -4,7 +4,6 @@
 #include "acceptor.hpp"
 #include "epoll.hpp"
 #include "client.hpp"
-#include "buffer.hpp"
 
 #include <boost/signals2.hpp>
 #include <vector>
@@ -20,8 +19,8 @@ class server
 public:
     boost::signals2::signal<void(server&, client&)> opened;
     boost::signals2::signal<void(server&, client&)> closed;
-    boost::signals2::signal<void(server&, client&, buffer)> ready_read;
-    boost::signals2::signal<void(server&, client&, buffer)> ready_write;
+    boost::signals2::signal<void(server&, client&, const std::string&)> message_received;
+    boost::signals2::signal<void(server&, client&, const std::string&)> message_written;
 
 public:
     server(uint16_t port, size_t max_events = 10000);
@@ -32,7 +31,7 @@ public:
 
     bool is_running() const noexcept;
 
-    bool write_to(client& _client, buffer _buffer);
+    bool write_to(client& _client, const std::string& _message);
     void close(client& _client);
 
 private:
