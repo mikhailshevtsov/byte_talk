@@ -34,7 +34,7 @@ bool size_header_reader::handle(server& _server, client& _client)
         if (m_buffer.bytes - SIZE_BYTES >= m_buffer.size)
         {
             m_buffer.bytes = m_buffer.size = 0;
-            _client.message_received(_server, _client, std::string(m_buffer.storage.data()));
+            _client.message_received(_server, _client, std::string(std::cbegin(m_buffer.storage), std::cend(m_buffer.storage)));
         }
     }
     return true;
@@ -68,7 +68,7 @@ bool size_header_writer::handle(server& _server, client& _client)
         if (m_buffer.bytes - SIZE_BYTES >= m_buffer.size)
         {
             m_buffer.bytes = m_buffer.size = 0;
-            _client.message_written(_server, _client, std::string(m_buffer.storage.data()));
+            _client.message_written(_server, _client, std::string(std::cbegin(m_buffer.storage), std::cend(m_buffer.storage)));
             close();
         }
     }
@@ -77,7 +77,7 @@ bool size_header_writer::handle(server& _server, client& _client)
 
 bool size_header_writer::write(const std::string& _message)
 {
-    if (_message.size() > 0)
+    if (_message.empty())
         return false;
     open();
     
