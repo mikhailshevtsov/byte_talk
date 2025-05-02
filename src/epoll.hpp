@@ -8,14 +8,12 @@
 namespace bt
 {
 
-class epoll : public socket
+struct epoll : socket
 {
-public:
     using socket::socket;
     using socket::operator=;
     static epoll create() noexcept;
 
-public:
     bool add(int sockfd, epoll_event* e) const noexcept;
     bool mod(int sockfd, epoll_event* e) const noexcept;
     bool del(int sockfd) const noexcept;

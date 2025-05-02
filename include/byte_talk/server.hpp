@@ -7,10 +7,10 @@
 #include "buffer.hpp"
 
 #include <boost/signals2.hpp>
-#include <string_view>
 #include <vector>
 #include <unordered_set>
 #include <memory>
+#include <atomic>
 
 namespace bt
 {
@@ -18,13 +18,13 @@ namespace bt
 class server
 {
 public:
-    boost::signals2::signal<void(server&, client&)> on_open;
-    boost::signals2::signal<void(server&, client&)> on_close;
-    boost::signals2::signal<void(server&, client&, buffer)> on_read;
-    boost::signals2::signal<void(server&, client&, buffer)> on_write;
+    boost::signals2::signal<void(server&, client&)> opened;
+    boost::signals2::signal<void(server&, client&)> closed;
+    boost::signals2::signal<void(server&, client&, buffer)> readyRead;
+    boost::signals2::signal<void(server&, client&, buffer)> readyWrite;
 
 public:
-    server(short port, size_t max_events = 10000);
+    server(uint16_t port, size_t max_events = 10000);
     ~server();
 
     int run();
@@ -36,8 +36,8 @@ public:
     void close(client& _client);
 
 private:
-    short m_port{};
-    volatile bool m_is_running = false;
+    uint16_t m_port{};
+    std::atomic_bool m_is_running = false;
     
     epoll m_epoll{};
     std::vector<epoll_event> m_events;

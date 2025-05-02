@@ -10,7 +10,7 @@
 namespace bt
 {
 
-server::server(short port, size_t max_events)
+server::server(uint16_t port, size_t max_events)
     : m_port{port}
 {
     m_events.resize(max_events);
@@ -19,7 +19,7 @@ server::server(short port, size_t max_events)
 server::~server()
 {
     for (auto& _client : m_clients)
-        on_close(*this, *_client);
+        closed(*this, *_client);
 }
 
 int server::run()
@@ -125,7 +125,7 @@ int server::run()
                     exit(EXIT_FAILURE);
                 }
                 
-                on_open(*this, *_client);
+                opened(*this, *_client);
         
                 continue;
             }
@@ -215,7 +215,7 @@ bool server::write_to(client& _client, buffer _buffer)
 
 void server::close(client& _client)
 {
-    on_close(*this, _client);
+    closed(*this, _client);
 
     bool res = false;
     do res = m_epoll.del(_client.connector.get());

@@ -7,9 +7,8 @@
 namespace bt
 {
 
-class acceptor : public socket
+struct acceptor : socket
 {
-public:
     using socket::socket;
     using socket::operator=;
 

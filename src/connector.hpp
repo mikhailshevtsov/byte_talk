@@ -6,9 +6,8 @@
 namespace bt
 {
 
-class connector : public socket
+struct connector : socket
 {
-public:
     using socket::socket;
     using socket::operator=;
 
