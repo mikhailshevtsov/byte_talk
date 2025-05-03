@@ -2,7 +2,7 @@
 #define BYTETALK_CLIENT_HPP
 
 #include "connector.hpp"
-#include "stream_handler.hpp"
+#include "byte_stream_handler.hpp"
 
 #include <memory>
 #include <any>

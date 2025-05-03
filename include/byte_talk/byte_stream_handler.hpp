@@ -1,5 +1,5 @@
-#ifndef BYTETALK_STREAMHANDLER_HPP
-#define BYTETALK_STREAMHANDLER_HPP
+#ifndef BYTETALK_BYTESTREAMHANDLER_HPP
+#define BYTETALK_BYTESTREAMHANDLER_HPP
 
 #include <string>
 
@@ -9,10 +9,10 @@ namespace bt
 class server;
 class client;
 
-class stream_handler
+class byte_stream_handler
 {
 public:
-    virtual ~stream_handler() = default;
+    virtual ~byte_stream_handler() = default;
 
     virtual bool handle(server& _server, client& _client) = 0;
 
@@ -25,9 +25,9 @@ private:
     bool m_is_open = true;
 };
 
-class reader : public stream_handler {};
+class reader : public byte_stream_handler {};
 
-class writer : public stream_handler
+class writer : public byte_stream_handler
 {
 public:
     virtual bool write(const std::string& _message) = 0;
@@ -35,4 +35,4 @@ public:
 
 }
 
-#endif //BYTETALK_STREAMHANDLER_HPP
+#endif //BYTETALK_BYTESTREAMHANDLER_HPP

@@ -8,11 +8,11 @@ target_sources(${LIBRARY_NAME}
     PRIVATE
     src/server.cpp
     src/client.cpp
+    src/common_handlers.cpp
     src/socket.cpp
     src/acceptor.cpp
     src/connector.cpp
     src/epoll.cpp
-    src/common_stream_handlers.cpp
 )
 
 target_include_directories(${LIBRARY_NAME}
