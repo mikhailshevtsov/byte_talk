@@ -1,13 +1,12 @@
 #include <byte_talk/common_handlers.hpp>
 #include <byte_talk/client.hpp>
 
-#include <unistd.h>
 #include <arpa/inet.h>
 
 namespace bt
 {
 
-bool common_reader::handle(server& _server, client& _client)
+bool length_prefixed_reader::read(server& _server, client& _client)
 {
     int nbytes = 0;
     if (m_end < SIZE_BYTES)
@@ -39,13 +38,12 @@ bool common_reader::handle(server& _server, client& _client)
     return true;
 }
 
-
-bool common_writer::handle(server& _server, client& _client)
+bool length_prefixed_writer::write(server& _server, client& _client)
 {
     int nbytes = 0;
     if (m_end < SIZE_BYTES)
     {
-        nbytes = _client.connector.write(reinterpret_cast<char*>(&m_size) + m_end, SIZE_BYTES - m_end);
+        nbytes = _client.connector.write(reinterpret_cast<const char*>(&m_size) + m_end, SIZE_BYTES - m_end);
         if (nbytes < 0)
             return false;
         m_end += nbytes;
@@ -59,7 +57,6 @@ bool common_writer::handle(server& _server, client& _client)
     {
         uint32_t bytes_left = m_end - SIZE_BYTES;
         nbytes = _client.connector.write(m_buffer.data() + bytes_left, m_size - bytes_left);
-
         if (nbytes < 0)
             return false;
         m_end += nbytes;
@@ -73,15 +70,15 @@ bool common_writer::handle(server& _server, client& _client)
     return true;
 }
 
-bool common_writer::write(const std::string& _message)
+bool length_prefixed_writer::load(const std::string& message)
 {
-    if (_message.empty())
+    if (message.empty())
         return false;
     open();
     
-    m_buffer.resize(_message.size());
-    std::copy(std::cbegin(_message), std::cend(_message), std::begin(m_buffer));
-    m_size = htonl(static_cast<uint32_t>(_message.size()));
+    m_buffer.resize(message.size());
+    std::copy(std::cbegin(message), std::cend(message), std::begin(m_buffer));
+    m_size = htonl(static_cast<uint32_t>(message.size()));
     m_end = 0;
 
     return true;

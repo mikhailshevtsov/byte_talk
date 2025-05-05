@@ -1,185 +1,21 @@
 #include <byte_talk/server.hpp>
+#include "sockets/socket_error.hpp"
 
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
+#include <exception>
+#include <iostream>
 
 namespace bt
 {
 
-server::server(uint16_t port, size_t max_events)
+server::server(short port, size_t max_events)
     : m_port{port}
-{
-    m_events.resize(max_events);
-}
+    , m_events(max_events)
+{}
 
 server::~server()
 {
-    for (auto& _client : m_clients)
-        closed(*this, *_client);
-}
-
-int server::run()
-{
-    // making acceptor socket
-    do m_acceptor = make_socket();
-    while (!m_acceptor && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
-    if (!m_acceptor)
-    {
-        perror("make_socket");
-        exit(EXIT_FAILURE);
-    }
-
-    // binding acceptor to ip-address and port
-    do m_acceptor.bind(m_port);
-    while (!m_acceptor && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
-    if (!m_acceptor)
-    {
-        perror("acceptor::bind");
-        exit(EXIT_FAILURE);
-    }
-        
-    // start listening
-    do m_acceptor.listen(5);
-    while (!m_acceptor && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
-    if (!m_acceptor)
-    {
-        perror("acceptor::listen");
-        exit(EXIT_FAILURE);
-    }
-
-    // creating epoll instance
-    m_epoll = epoll::create();
-    do m_epoll = epoll::create();
-    while (!m_epoll && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
-    if (!m_epoll)
-    {
-        perror("epoll::create");
-        exit(EXIT_FAILURE);
-    }
-
-    // add listening socket to epoll instance
-    epoll_event e{};
-    e.events = EPOLLIN;
-    e.data.ptr = &m_acceptor;
-
-    bool res = false;
-    do res = m_epoll.add(m_acceptor.get(), &e);
-    while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
-    if (!res)
-    {
-        perror("epoll::add");
-        exit(EXIT_FAILURE);
-    }
-
-    // start event loop
-    m_is_running = true;
-    while (m_is_running)
-    {
-        // get events list
-        int nfds = -1;
-        do nfds = m_epoll.wait(m_events.data(), m_events.size());
-        while (nfds < 0 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
-        if (nfds < 0)
-        {
-            perror("epoll::wait");
-            exit(EXIT_FAILURE);
-        }
-
-        for (int i = 0; i < nfds; ++i)
-        {   
-            // event on listening socket
-            if (m_events[i].data.ptr == &m_acceptor)
-            {
-                connector conn;
-                do conn = m_acceptor.accept();
-                while (!conn && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
-                if (!conn)
-                {
-                    perror("acceptor::accept");
-                    exit(EXIT_FAILURE);
-                }
-                if (!conn.set_nonblocking())
-                {
-                    perror("socket::set_nonblocking");
-                    exit(EXIT_FAILURE);
-                }
-
-                auto _client = std::make_shared<client>(std::move(conn));
-                m_clients.insert(_client);
-
-                epoll_event e{};
-                e.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR;
-                e.data.ptr = _client.get();
-
-                // add new socket to epoll instance
-                bool res = false;
-                do res = m_epoll.add(_client->connector.get(), &e);
-                while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
-                if (!res)
-                {
-                    perror("epoll::add");
-                    exit(EXIT_FAILURE);
-                }
-                
-                opened(*this, *_client);
-        
-                continue;
-            }
-
-            auto _client = static_cast<client*>(m_events[i].data.ptr);
-
-            // input event
-            if (m_events[i].events & EPOLLIN && _client->reader && _client->reader->is_open())
-            {
-                bool res = false;
-                do res = _client->reader->handle(*this, *_client);
-                while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
-                if (!res )
-                {
-                    perror("connector::read");
-                    exit(EXIT_FAILURE);
-                }
-            }
-            // output event
-            if (m_events[i].events & EPOLLOUT && _client->writer && _client->writer->is_open())
-            {
-                bool res = false;
-                do res = _client->writer->handle(*this, *_client);
-                while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
-                if (!res)
-                {
-                    perror("connector::write");
-                    exit(EXIT_FAILURE);
-                }
-                if (!_client->writer->is_open())
-                {
-                    epoll_event e{};
-                    e.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR;
-                    e.data.ptr = _client;
-
-                    bool res = false;
-                    do res = m_epoll.mod(_client->connector.get(), &e);
-                    while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
-                    if (!res)
-                    {
-                        perror("epoll::mode");
-                        exit(EXIT_FAILURE);
-                    }
-                }
-            }
-            // close event
-            if (m_events[i].events & EPOLLHUP || m_events[i].events & EPOLLRDHUP || m_events[i].events & EPOLLERR)
-            {
-                close(*_client);
-            }
-        }
-    }
-
-    return 0;
+    for (auto& [fd, _client] : m_clients)
+        client_disconnected(*this, *_client);
 }
 
 void server::stop()
@@ -192,41 +28,144 @@ bool server::is_running() const noexcept
     return m_is_running;
 }
 
-bool server::write_to(client& _client, const std::string& _message)
+bool server::write_to(client& _client, const std::string& message)
 {
-    if (!_client.writer->write(_message))
+    if (!_client.writer->load(message))
         return false;
 
-    epoll_event e{};
-    e.events = EPOLLIN | EPOLLOUT | EPOLLHUP | EPOLLRDHUP | EPOLLERR;
-    e.data.ptr = &_client;
-
-    bool res = false;
-    do res = m_epoll.mod(_client.connector.get(), &e);
-    while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
-    if (!res)
-    {
-        perror("epoll::mod");
-        exit(EXIT_FAILURE);
-    }
+    m_epoll.mod(_client.connector, epoll::event{
+        EPOLLIN | EPOLLOUT | EPOLLHUP | EPOLLRDHUP | EPOLLERR,
+        &_client
+    });
 
     return true;
 }
 
 void server::close(client& _client)
 {
-    closed(*this, _client);
+    client_disconnected(*this, _client);
 
-    bool res = false;
-    do res = m_epoll.del(_client.connector.get());
-    while (!res && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR));
-    if (!res)
+    m_epoll.del(_client.connector);
+
+    m_clients.erase(_client.connector.fd());
+}
+
+int server::run()
+{
+    setup();
+    // start event loop
+    m_is_running = true;
+    while (m_is_running)
+        loop();
+
+    return 0;
+}
+
+void server::setup()
+{
+    try
     {
-        perror("epoll::del");
-        exit(EXIT_FAILURE);
+        m_acceptor = make_socket();
+        m_acceptor.bind(m_port);
+        m_acceptor.listen(5);
+        m_epoll = epoll::create();
+        m_epoll.add(m_acceptor, epoll::event{EPOLLIN, &m_acceptor});
     }
+    catch (const acceptor_error& e)
+    {
+    }
+    catch (const epoll_error& e)
+    {
+    }
+    catch (const socket_error& e)
+    {
+    }
+    catch (const std::exception& e)
+    {
+    }
+}
 
-    m_clients.erase(_client.shared_from_this());
+
+void server::loop()
+{
+    try
+    {
+        // get events list
+        int nfds = m_epoll.wait(m_events.data(), m_events.size());
+        for (int i = 0; i < nfds; ++i)
+        {   
+            // event on listening socket
+            if (m_events[i].data() == &m_acceptor)
+            {
+                connector conn = m_acceptor.accept();
+                auto _client = std::make_shared<client>(std::move(conn));
+                m_clients[conn.fd()] = _client;
+
+                // add new socket to epoll instance
+                m_epoll.add(conn, epoll::event{
+                    EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR,
+                    _client.get()
+                });
+                
+                client_connected(*this, *_client);
+
+                continue;
+            }
+
+            auto _client = static_cast<client*>(m_events[i].data());
+            auto events = m_events[i].events();
+
+            // input event
+            if (events & EPOLLIN && _client->reader && _client->reader->is_open())
+            {
+                _client->reader->read(*this, *_client);
+            }
+
+            // output event
+            if (events & EPOLLOUT && _client->writer && _client->writer->is_open())
+            {
+                _client->writer->write(*this, *_client);
+                if (!_client->writer->is_open())
+                {
+                    m_epoll.mod(_client->connector, epoll::event{
+                        EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR,
+                        _client
+                    });
+                }
+            }
+            
+            // close event
+            if (events & EPOLLHUP || events & EPOLLRDHUP || events & EPOLLERR)
+            {
+                close(*_client);
+            }
+        }
+    }
+    catch (const acceptor_error& e)
+    {
+        std::cerr << "acceptor exception on socket " << e.sockfd() << " : " << e.what() << "\n";
+        if (e.error_code() != EAGAIN && e.error_code() != EWOULDBLOCK && e.error_code() != EINTR)
+        {
+            client& _client = *m_clients[e.sockfd()];
+            close(_client);
+        }
+    }
+    catch (const epoll_error& e)
+    {
+        std::cerr << "epoll exception on socket " << e.sockfd() << " : " << e.what() << "\n";
+    }
+    catch (const connector_error& e)
+    {
+        std::cerr << "connector exception on socket " << e.sockfd() << " : " << e.what() << "\n";
+    }
+    catch (const socket_error& e)
+    {
+        std::cerr << "socket exception on socket " << e.sockfd() << " : " << e.what() << "\n";
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "unknown exception " << e.what() << "\n";
+    }
 }
 
 }

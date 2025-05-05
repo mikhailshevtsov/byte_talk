@@ -4,7 +4,6 @@
 namespace bt
 {
 
-// Move-only
 class socket
 {
 public:
@@ -25,27 +24,19 @@ public:
     int release() noexcept;
 
 public:
-    int get() const noexcept;
+    int fd() const noexcept;
     bool is_valid() const noexcept;
 
     explicit operator bool() const noexcept;
     bool operator==(const socket& other) const noexcept = default;
 
-public:
-    bool set_nonblocking() noexcept;
-
 private:
     int m_sockfd = -1;
 };
 
-socket make_socket() noexcept;
-
-struct nullsock_t
-{
-    operator socket() const noexcept;
-};
-
-extern nullsock_t nullsock;
+// make non-blocking socket
+socket make_socket();
+socket make_socket(int sockfd);
 
 }
 

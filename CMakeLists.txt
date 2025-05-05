@@ -3,16 +3,13 @@ project(byte_talk LANGUAGES CXX)
 
 set(LIBRARY_NAME byte_talk)
 
+add_subdirectory(src/sockets)
+
 add_library(${LIBRARY_NAME})
 target_sources(${LIBRARY_NAME}
     PRIVATE
     src/server.cpp
-    src/client.cpp
     src/common_handlers.cpp
-    src/socket.cpp
-    src/acceptor.cpp
-    src/connector.cpp
-    src/epoll.cpp
 )
 
 target_include_directories(${LIBRARY_NAME}

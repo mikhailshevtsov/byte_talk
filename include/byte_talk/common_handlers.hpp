@@ -1,7 +1,7 @@
 #ifndef BYTETALK_COMMONHANDLERS_HPP
 #define BYTETALK_COMMONHANDLERS_HPP
 
-#include "byte_stream_handler.hpp"
+#include "proto_handler.hpp"
 
 #include <vector>
 #include <cstdint>
@@ -9,10 +9,10 @@
 namespace bt
 {
 
-class common_reader : public bt::reader
+class length_prefixed_reader : public bt::reader
 {
 private:
-    bool handle(bt::server& _server, bt::client& _client) override;
+    bool read(bt::server& _server, bt::client& _client) override;
 
     static constexpr uint32_t SIZE_BYTES = 4;
 
@@ -22,11 +22,11 @@ private:
     uint32_t m_end = 0;
 };
 
-class common_writer : public bt::writer
+class length_prefixed_writer : public bt::writer
 {
 private:
-    bool handle(bt::server& _server, bt::client& _client) override;
-    bool write(const std::string& _message) override;
+    bool write(bt::server& _server, bt::client& _client) override;
+    bool load(const std::string& message) override;
 
     static constexpr uint32_t SIZE_BYTES = 4;
 

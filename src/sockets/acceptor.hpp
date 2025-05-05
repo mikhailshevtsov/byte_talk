@@ -12,10 +12,10 @@ struct acceptor : socket
     using socket::socket;
     using socket::operator=;
 
-    bool bind(short port) const noexcept;
-    bool listen(int backlog) const noexcept;
+    bool bind(short port) const;
+    bool listen(int backlog) const;
 
-    connector accept() const noexcept;
+    connector accept() const;
 };
 
 }

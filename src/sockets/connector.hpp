@@ -3,6 +3,8 @@
 
 #include "socket.hpp"
 
+#include <unistd.h>
+
 namespace bt
 {
 
@@ -11,8 +13,8 @@ struct connector : socket
     using socket::socket;
     using socket::operator=;
 
-    int read(char* buffer, int bytes) const noexcept;
-    int write(const char* buffer, int bytes) const noexcept;
+    ssize_t read(char* buffer, size_t bytes) const;
+    ssize_t write(const char* buffer, size_t bytes) const;
 };
 
 }

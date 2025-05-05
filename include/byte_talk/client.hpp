@@ -1,8 +1,8 @@
 #ifndef BYTETALK_CLIENT_HPP
 #define BYTETALK_CLIENT_HPP
 
-#include "connector.hpp"
-#include "byte_stream_handler.hpp"
+#include "sockets/connector.hpp"
+#include "proto_handler.hpp"
 
 #include <memory>
 #include <any>
@@ -14,11 +14,11 @@ namespace bt
 struct client : public std::enable_shared_from_this<client>
 {
     bt::connector connector;
-    std::unique_ptr<bt::reader> reader{};
-    std::unique_ptr<bt::writer> writer{};
+    std::unique_ptr<bt::reader> reader;
+    std::unique_ptr<bt::writer> writer;
     std::any context;
 
-    client(bt::connector&& conn) noexcept;
+    client(bt::connector&& conn) noexcept : connector{std::move(conn)} {}
 
     boost::signals2::signal<void(server&, client&, std::string)> message_received;
     boost::signals2::signal<void(server&, client&, std::string)> message_written;

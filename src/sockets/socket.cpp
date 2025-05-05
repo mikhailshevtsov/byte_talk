@@ -1,9 +1,12 @@
 #include "socket.hpp"
 
+#include <cerrno>
 #include <unistd.h>
-#include <sys/socket.h>
 #include <fcntl.h>
+#include <netinet/in.h>
 #include <utility>
+
+#include "socket_error.hpp"
 
 namespace bt
 {
@@ -42,14 +45,6 @@ socket::operator bool() const noexcept
     return is_valid();
 }
 
-bool socket::set_nonblocking() noexcept
-{
-    int flags = fcntl(m_sockfd, F_GETFL, 0);
-    if (flags < 0)
-        return false;
-    return fcntl(m_sockfd, F_SETFL, flags | O_NONBLOCK) >= 0;
-}
-
 void socket::reset() noexcept
 {
     socket s{};
@@ -68,7 +63,7 @@ int socket::release() noexcept
     return std::exchange(m_sockfd, -1);
 }
 
-int socket::get() const noexcept
+int socket::fd() const noexcept
 {
     return m_sockfd;
 }
@@ -78,19 +73,29 @@ bool socket::is_valid() const noexcept
     return m_sockfd >= 0;
 }
 
-socket make_socket() noexcept
+socket make_socket()
 {
     int sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd >= 0)
-        setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, 0, 0);
+    if (sockfd < 0)
+        throw socket_error(sockfd, errno);
+    return make_socket(sockfd);
+}
+
+socket make_socket(int sockfd)
+{
+    if (sockfd < 0)
+        return {};
+
+    int res = -1;
+    res = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, 0, 0);
+    if (res < 0)
+        throw socket_error(sockfd, errno);
+
+    res = fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL, 0) | O_NONBLOCK);
+    if (res < 0)
+        throw socket_error(sockfd, errno);
+
     return socket{sockfd};
 }
-
-nullsock_t::operator socket() const noexcept
-{
-    return {};
-}
-
-nullsock_t nullsock{};
 
 }
