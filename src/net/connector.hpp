@@ -1,11 +1,11 @@
-#ifndef BYTETALK_CONNECTOR_HPP
-#define BYTETALK_CONNECTOR_HPP
+#ifndef BYTETALK_NET_CONNECTOR_HPP
+#define BYTETALK_NET_CONNECTOR_HPP
 
 #include "socket.hpp"
 
 #include <unistd.h>
 
-namespace bt
+namespace bt::net
 {
 
 struct connector : socket
@@ -19,4 +19,4 @@ struct connector : socket
 
 }
 
-#endif //BYTETALK_CONNECTOR_HPP
+#endif //BYTETALK_NET_CONNECTOR_HPP

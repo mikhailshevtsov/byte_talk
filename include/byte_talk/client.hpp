@@ -1,8 +1,9 @@
 #ifndef BYTETALK_CLIENT_HPP
 #define BYTETALK_CLIENT_HPP
 
-#include "sockets/connector.hpp"
-#include "proto_handler.hpp"
+#include "net/connector.hpp"
+#include "reader.hpp"
+#include "writer.hpp"
 
 #include <memory>
 #include <any>
@@ -11,17 +12,24 @@
 namespace bt
 {
     
-struct client : public std::enable_shared_from_this<client>
+class client : public std::enable_shared_from_this<client>
 {
-    bt::connector connector;
+public:
+    client(net::connector&& connector) noexcept : m_connector{std::move(connector)} {}
+    client(const client& other) = delete;
+    client& operator=(const client& other) = delete;
+
+    boost::signals2::signal<void(server&, client&, std::string)> message_received;
+    boost::signals2::signal<void(server&, client&, std::string)> message_written;
+
+    const net::connector& connector() const noexcept { return m_connector; }
+    
     std::unique_ptr<bt::reader> reader;
     std::unique_ptr<bt::writer> writer;
     std::any context;
 
-    client(bt::connector&& conn) noexcept : connector{std::move(conn)} {}
-
-    boost::signals2::signal<void(server&, client&, std::string)> message_received;
-    boost::signals2::signal<void(server&, client&, std::string)> message_written;
+private:
+    net::connector m_connector;
 };
 
 }

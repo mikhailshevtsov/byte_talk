@@ -1,4 +1,5 @@
-#include <byte_talk/common_handlers.hpp>
+#include <byte_talk/length_prefixed_proto.hpp>
+#include <byte_talk/server.hpp>
 #include <byte_talk/client.hpp>
 
 #include <arpa/inet.h>
@@ -6,14 +7,11 @@
 namespace bt
 {
 
-bool length_prefixed_reader::read(server& _server, client& _client)
+void length_prefixed_reader::read(server& _server, client& _client)
 {
-    int nbytes = 0;
     if (m_end < SIZE_BYTES)
     {
-        nbytes = _client.connector.read(reinterpret_cast<char*>(&m_size) + m_end, SIZE_BYTES - m_end);
-        if (nbytes < 0)
-            return false;
+        int nbytes = _client.connector().read(reinterpret_cast<char*>(&m_size) + m_end, SIZE_BYTES - m_end);
         m_end += nbytes;
         if (m_end >= SIZE_BYTES)
         {
@@ -24,10 +22,7 @@ bool length_prefixed_reader::read(server& _server, client& _client)
     else
     {
         uint32_t bytes_left = m_end - SIZE_BYTES;
-        nbytes = _client.connector.read(m_buffer.data() + bytes_left, m_size - bytes_left);
-
-        if (nbytes < 0)
-            return false;
+        int nbytes = _client.connector().read(m_buffer.data() + bytes_left, m_size - bytes_left);
         m_end += nbytes;
         if (m_end - SIZE_BYTES >= m_size)
         {
@@ -35,17 +30,13 @@ bool length_prefixed_reader::read(server& _server, client& _client)
             _client.message_received(_server, _client, std::string(std::cbegin(m_buffer), std::cend(m_buffer)));
         }
     }
-    return true;
 }
 
-bool length_prefixed_writer::write(server& _server, client& _client)
+void length_prefixed_writer::write(server& _server, client& _client)
 {
-    int nbytes = 0;
     if (m_end < SIZE_BYTES)
     {
-        nbytes = _client.connector.write(reinterpret_cast<const char*>(&m_size) + m_end, SIZE_BYTES - m_end);
-        if (nbytes < 0)
-            return false;
+        int nbytes = _client.connector().write(reinterpret_cast<const char*>(&m_size) + m_end, SIZE_BYTES - m_end);
         m_end += nbytes;
         if (m_end >= SIZE_BYTES)
         {
@@ -56,25 +47,21 @@ bool length_prefixed_writer::write(server& _server, client& _client)
     else
     {
         uint32_t bytes_left = m_end - SIZE_BYTES;
-        nbytes = _client.connector.write(m_buffer.data() + bytes_left, m_size - bytes_left);
-        if (nbytes < 0)
-            return false;
+        int nbytes = _client.connector().write(m_buffer.data() + bytes_left, m_size - bytes_left);
         m_end += nbytes;
         if (m_end - SIZE_BYTES >= m_size)
         {
             m_end = m_size = 0;
             _client.message_written(_server, _client, std::string(std::cbegin(m_buffer), std::cend(m_buffer)));
-            close();
+            _server.stop_writing(_client);
         }
     }
-    return true;
 }
 
 bool length_prefixed_writer::load(const std::string& message)
 {
     if (message.empty())
         return false;
-    open();
     
     m_buffer.resize(message.size());
     std::copy(std::cbegin(message), std::cend(message), std::begin(m_buffer));

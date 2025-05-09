@@ -1,14 +1,12 @@
 #include "socket.hpp"
+#include "errors.hpp"
 
-#include <cerrno>
 #include <unistd.h>
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <utility>
 
-#include "socket_error.hpp"
-
-namespace bt
+namespace bt::net
 {
 
 socket::socket() noexcept
@@ -77,23 +75,22 @@ socket make_socket()
 {
     int sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0)
-        throw socket_error(sockfd, errno);
-    return make_socket(sockfd);
-}
-
-socket make_socket(int sockfd)
-{
-    if (sockfd < 0)
-        return {};
+        throw socket_error(sockfd, errno, socket_error::source::socket);
 
     int res = -1;
-    res = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, 0, 0);
+
+    int reuse = 1;
+    res = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&reuse), sizeof(reuse));
     if (res < 0)
-        throw socket_error(sockfd, errno);
+        throw socket_error(sockfd, errno, socket_error::source::setsockopt);
+
+    res = setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, reinterpret_cast<const char*>(&reuse), sizeof(reuse));
+    if (res < 0)
+        throw socket_error(sockfd, errno, socket_error::source::setsockopt);
 
     res = fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL, 0) | O_NONBLOCK);
     if (res < 0)
-        throw socket_error(sockfd, errno);
+        throw socket_error(sockfd, errno, socket_error::source::fcntl);
 
     return socket{sockfd};
 }

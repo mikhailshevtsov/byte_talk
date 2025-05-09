@@ -2,21 +2,52 @@
 
 ##  Description
 
-The project is essentially a simple and convenient abstraction over the epoll event loop. Thus, a byte_talk will be able to efficiently handle thousands of connections per second. Interaction with clients is based on a simple event system. The framework is object-oriented and easy to use.
+The framework allows you to efficiently handle thousands of concurrent connections in a single thread.
+Fully customizable. Different connections can use different data transfer protocols, both read and write. You can add your own protocol by overriding virtual methods of bt::reader and bt::writer classes. They are responsible for reading / writing data from the socket and notifying about receiving / sending new messages. Notifications are implemented using boost::signals. Each connection has its own signals, so you can treat each connection differently, or you can connect all the signals to the global server signals and treat all connections the same. Each connection also has a context, which can store additional information related to the client.
 
 ## Echo-server example
 ```
 #include <byte_talk/server.hpp>
+#include <byte_talk/length_prefixed_proto.hpp>
+#include <iostream>
 
 int main()
 {
-    bt::server echo{15000};
+    static constexpr short PORT = 5555;
+    bt::server echo{PORT};
 
-    echo.on(
-        bt::server::event::read,
-        [&](std::shared_ptr<bt::client> client, std::string_view message)
+    echo.client_connected.connect(
+        [](bt::server& server, bt::client& client)
         {
-            echo.write_to(client, message);
+            std::cout << "New connection on socket " << client.connector().fd() << "!\n";
+
+            client.reader = std::make_unique<bt::length_prefixed_reader>();
+            client.writer = std::make_unique<bt::length_prefixed_writer>();
+
+            client.message_received.connect(server.message_received);
+            client.message_written.connect(server.message_written);
+        }
+    );
+
+    echo.message_received.connect(
+        [&](bt::server& server, bt::client& client, const std::string& message)
+        {
+            std::cout << "New message from socket " << client.connector().fd() << " : " << message << "\n";
+            server.write_to(client, message);
+        }
+    );
+
+    echo.message_written.connect(
+        [&](bt::server& server, bt::client& client, const std::string& message)
+        {
+            std::cout << "Send back message to socket " << client.connector().fd() << " : " << message << "\n";
+        }
+    );
+
+    echo.client_disconnected.connect(
+        [](bt::server& server, bt::client& client)
+        {
+            std::cout << "Close connection on socket " << client.connector().fd() << "(\n";
         }
     );
 

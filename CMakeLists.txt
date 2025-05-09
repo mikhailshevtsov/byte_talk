@@ -3,14 +3,15 @@ project(byte_talk LANGUAGES CXX)
 
 set(LIBRARY_NAME byte_talk)
 
-add_subdirectory(src/sockets)
-
 add_library(${LIBRARY_NAME})
 target_sources(${LIBRARY_NAME}
     PRIVATE
     src/server.cpp
-    src/common_handlers.cpp
+    src/length_prefixed_proto.cpp
 )
+
+add_subdirectory(src/net)
+target_link_libraries(${LIBRARY_NAME} PRIVATE byte_talk_net)
 
 target_include_directories(${LIBRARY_NAME}
     PUBLIC $<BUILD_LOCAL_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)

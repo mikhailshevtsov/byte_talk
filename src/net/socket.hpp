@@ -1,7 +1,7 @@
-#ifndef BYTETALK_SOCKET_HPP
-#define BYTETALK_SOCKET_HPP
+#ifndef BYTETALK_NET_SOCKET_HPP
+#define BYTETALK_NET_SOCKET_HPP
 
-namespace bt
+namespace bt::net
 {
 
 class socket
@@ -36,8 +36,7 @@ private:
 
 // make non-blocking socket
 socket make_socket();
-socket make_socket(int sockfd);
 
 }
 
-#endif //BYTETALK_SOCKET_HPP
+#endif //BYTETALK_NET_SOCKET_HPP

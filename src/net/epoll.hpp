@@ -1,11 +1,11 @@
-#ifndef BYTETALK_EPOLL_HPP
-#define BYTETALK_EPOLL_HPP
+#ifndef BYTETALK_NET_EPOLL_HPP
+#define BYTETALK_NET_EPOLL_HPP
 
 #include "socket.hpp"
 
 #include <sys/epoll.h>
 
-namespace bt
+namespace bt::net
 {
 
 struct epoll : socket
@@ -28,15 +28,15 @@ struct epoll : socket
     using socket::operator=;
     static epoll create();
 
-    bool add(socket& sock, event e) const;
-    bool mod(socket& sock, event e) const;
-    bool del(socket& sock) const;
-    bool ctl(int op, socket& sock, event e = {}) const;
+    void add(const socket& sock, event e) const;
+    void mod(const socket& sock, event e) const;
+    void del(const socket& sock) const;
+    void ctl(int op, const socket& sock, event e = {}) const;
 
     int wait(event* events, int max_events) const;
 };
 
 }
 
-#endif //BYTETALK_EPOLL_HPP
+#endif //BYTETALK_NET_EPOLL_HPP
 

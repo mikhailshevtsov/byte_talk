@@ -1,14 +1,13 @@
 #include "acceptor.hpp"
-#include "socket_error.hpp"
+#include "errors.hpp"
 
-#include <cerrno>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-namespace bt
+namespace bt::net
 {
 
-bool acceptor::bind(short port) const
+void acceptor::bind(short port) const
 {
     sockaddr_in addr{};
     addr.sin_family = AF_INET;
@@ -17,16 +16,14 @@ bool acceptor::bind(short port) const
 
     int res = ::bind(fd(), (sockaddr*)&addr, sizeof(addr));
     if (res < 0)
-        throw acceptor_error(fd(), errno); 
-    return res >= 0;
+        throw acceptor_error(fd(), errno, acceptor_error::source::bind); 
 }
 
-bool acceptor::listen(int backlog) const
+void acceptor::listen(int backlog) const
 {
     int res = ::listen(fd(), backlog);
     if (res < 0)
-        throw acceptor_error(fd(), errno);
-    return res >= 0;
+        throw acceptor_error(fd(), errno, acceptor_error::source::listen);
 }
 
 connector acceptor::accept() const
@@ -36,7 +33,7 @@ connector acceptor::accept() const
 
     int sockfd = ::accept(fd(), (sockaddr*)&addr, &addrlen);
     if (sockfd < 0)
-        throw acceptor_error(fd(), errno);
+        throw acceptor_error(fd(), errno, acceptor_error::source::accept);
     return connector{sockfd};
 }
 
