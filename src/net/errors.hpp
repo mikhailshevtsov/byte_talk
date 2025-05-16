@@ -26,7 +26,7 @@ private:
 class socket_error : public error
 {
 public:
-    enum class source { socket, setsockopt, fcntl };
+    enum class source { socket, setsockopt, fcntl, close };
     socket_error(int sockfd, int ec, source src) noexcept;
 
     source where() const noexcept;

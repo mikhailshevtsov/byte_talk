@@ -8,7 +8,7 @@ class socket
 {
 public:
     socket() noexcept;
-    ~socket() noexcept;
+    ~socket();
     explicit socket(int sockfd) noexcept;
 
     socket(socket&& other) noexcept;
@@ -20,8 +20,9 @@ public:
 public:
     void swap(socket& other) noexcept;
     void reset() noexcept;
-    int close() noexcept;
     int release() noexcept;
+
+    void close();
 
 public:
     int fd() const noexcept;

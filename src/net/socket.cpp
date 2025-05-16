@@ -13,10 +13,10 @@ socket::socket() noexcept
     : m_sockfd{-1}
 {}
 
-socket::~socket() noexcept
+socket::~socket()
 {
-    if (is_valid())
-        ::close(m_sockfd);
+    try { close(); }
+    catch (const socket_error& e) { /*skip*/ }
 }
 
 socket::socket(int sockfd) noexcept
@@ -45,20 +45,20 @@ socket::operator bool() const noexcept
 
 void socket::reset() noexcept
 {
-    socket s{};
+    socket s;
     swap(s);
-}
-
-int socket::close() noexcept
-{
-    int rv = ::close(m_sockfd);
-    m_sockfd = -1;
-    return rv;
 }
 
 int socket::release() noexcept
 {
     return std::exchange(m_sockfd, -1);
+}
+
+void socket::close()
+{
+    if (is_valid() && ::close(m_sockfd) < 0)
+        throw socket_error(m_sockfd, errno, socket_error::source::close);
+    m_sockfd = -1;
 }
 
 int socket::fd() const noexcept
