@@ -1,8 +1,5 @@
 #include <byte_talk/server.hpp>
 
-#include <exception>
-#include <iostream>
-
 namespace bt
 {
 
@@ -84,7 +81,8 @@ void server::setup()
     }
     catch (const net::acceptor_error& e)
     {
-        std::cerr << current_date_time() << "-> Acceptor exception on socket " << e.sockfd() << " : " << e.what() << "\n";
+        m_logger.log(e);
+
         switch (e.where())
         {
             case net::acceptor_error::source::bind:
@@ -180,7 +178,7 @@ void server::setup()
     }
     catch (const net::epoll_error& e)
     {
-        std::cerr << current_date_time() << "-> Epoll exception on socket " << e.sockfd() << " : " << e.what() << "\n";
+        m_logger.log(e);
 
         switch (e.error_code())
         {
@@ -207,8 +205,8 @@ void server::setup()
     }
     catch (const net::socket_error& e)
     {
-        std::cerr << current_date_time() << "-> Socket exception on socket " << e.sockfd() << " : " << e.what() << "\n";
-    
+        m_logger.log(e);
+
         switch (e.where())
         {
             case net::socket_error::source::socket:
@@ -220,13 +218,16 @@ void server::setup()
             case net::socket_error::source::fcntl:
                 break;
 
+            case net::socket_error::source::close:
+                break;
+
             default:
                 break;
         }
     }
     catch (const std::exception& e)
     {
-        std::cerr << current_date_time() << "-> Unknown exception on socket " << e.what() << "\n";
+        m_logger.log(e);
     }
 }
 
@@ -277,7 +278,7 @@ void server::loop()
     }
     catch (const net::acceptor_error& e)
     {
-        log(e);
+        m_logger.log(e);
 
         switch (e.error_code())
         {
@@ -322,7 +323,7 @@ void server::loop()
     }
     catch (const net::epoll_error& e)
     {
-        log(e);
+        m_logger.log(e);
     
         switch (e.where())
         {
@@ -402,7 +403,7 @@ void server::loop()
     }
     catch (const net::connector_error& e)
     {
-        log(e);
+        m_logger.log(e);
 
         switch (e.where())
         {
@@ -510,7 +511,7 @@ void server::loop()
     }
     catch (const net::socket_error& e)
     {
-        log(e);
+        m_logger.log(e);
 
         switch (e.where())
         {
@@ -523,29 +524,17 @@ void server::loop()
             case net::socket_error::source::fcntl:
                 break;
 
+            case net::socket_error::source::close:
+                break;
+
             default:
                 break;
         }
     }
     catch (const std::exception& e)
     {
-        log(e);
+        m_logger.log(e);
     }
-}
-
-const std::chrono::zoned_time<std::chrono::milliseconds> server::current_date_time()
-{
-    return {std::chrono::current_zone(), std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now())};
-}
-
-void server::log(const net::error& e) noexcept
-{
-    std::cerr << current_date_time() << " -> Exception on socket " << e.sockfd() << " : " << e.what() << "\n";
-}
-
-void server::log(const std::exception& e) noexcept
-{
-    std::cerr << current_date_time() << " -> Unknown exception " << e.what() << "\n";
 }
 
 }

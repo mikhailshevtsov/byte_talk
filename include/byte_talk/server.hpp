@@ -5,6 +5,7 @@
 #include "net/epoll.hpp"
 #include "net/errors.hpp"
 #include "client.hpp"
+#include "logger.hpp"
 
 #include <boost/signals2.hpp>
 #include <vector>
@@ -47,10 +48,6 @@ private:
     void loop();
     
     static constexpr uint32_t EVENTS = EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR;
-    static const std::chrono::zoned_time<std::chrono::milliseconds> current_date_time();
-
-    static void log(const net::error& e) noexcept;
-    static void log(const std::exception& e) noexcept;
 
 private:
     short m_port{};
@@ -61,6 +58,8 @@ private:
 
     net::acceptor m_acceptor{}; 
     std::unordered_map<int, std::shared_ptr<client>> m_clients;
+
+    logger m_logger{std::cerr};
 };
 
 }
