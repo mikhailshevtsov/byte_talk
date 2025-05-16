@@ -12,11 +12,13 @@ class error : public std::exception
 {
 public:
     error(int sockfd, int ec) noexcept;
-    
+
     const char* what() const noexcept override;
 
     int sockfd() const noexcept;
     int error_code() const noexcept;
+
+    virtual const char* type() const noexcept;
 
 private:
     int m_sockfd = -1;
@@ -31,6 +33,8 @@ public:
 
     source where() const noexcept;
 
+    const char* type() const noexcept override;
+
 private:
     source m_src{};
 };
@@ -43,6 +47,8 @@ public:
     epoll_error(int sockfd, int ec, source src) noexcept;
 
     source where() const noexcept;
+
+    const char* type() const noexcept override;
 
 private:
     source m_src{};
@@ -57,6 +63,8 @@ public:
 
     source where() const noexcept;
 
+    const char* type() const noexcept override;
+
 private:
     source m_src{};
 };
@@ -69,6 +77,8 @@ public:
     connector_error(int sockfd, int ec, source src) noexcept;
 
     source where() const noexcept;
+
+    const char* type() const noexcept override;
 
 private:
     source m_src{};
