@@ -12,7 +12,7 @@ public:
     explicit socket(int sockfd) noexcept;
 
     socket(socket&& other) noexcept;
-    socket& operator=(socket&& other) noexcept;
+    socket& operator=(socket&& other) & noexcept;
 
     socket(const socket& other) = delete;
     socket& operator=(const socket& other) = delete;

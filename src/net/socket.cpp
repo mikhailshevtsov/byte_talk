@@ -27,7 +27,7 @@ socket::socket(socket&& other) noexcept
     : m_sockfd{other.release()}
 {}
 
-socket& socket::operator=(socket&& other) noexcept
+socket& socket::operator=(socket&& other) & noexcept
 {
     swap(other);
     return *this;
