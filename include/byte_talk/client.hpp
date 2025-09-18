@@ -4,6 +4,8 @@
 #include "net/connector.hpp"
 #include "reader.hpp"
 #include "writer.hpp"
+#include "request.hpp"
+#include "response.hpp"
 
 #include <memory>
 #include <any>
@@ -19,8 +21,8 @@ public:
     client(const client& other) = delete;
     client& operator=(const client& other) = delete;
 
-    boost::signals2::signal<void(server&, client&, std::string)> message_received;
-    boost::signals2::signal<void(server&, client&, std::string)> message_written;
+    boost::signals2::signal<void(server&, client&, const request&)> request_received;
+    boost::signals2::signal<void(server&, client&, const response&)> response_sent;
 
     const net::connector& connector() const noexcept { return m_connector; }
     

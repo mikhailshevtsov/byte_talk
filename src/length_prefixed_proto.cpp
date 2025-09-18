@@ -27,7 +27,8 @@ void length_prefixed_reader::read(server& _server, client& _client)
         if (m_end - SIZE_BYTES >= m_size)
         {
             m_end = m_size = 0;
-            _client.message_received(_server, _client, std::string(std::cbegin(m_buffer), std::cend(m_buffer)));
+            length_prefixed_request _request(std::string(std::cbegin(m_buffer), std::cend(m_buffer)));
+            _client.request_received(_server, _client, _request);
         }
     }
 }
@@ -52,20 +53,23 @@ void length_prefixed_writer::write(server& _server, client& _client)
         if (m_end - SIZE_BYTES >= m_size)
         {
             m_end = m_size = 0;
-            _client.message_written(_server, _client, std::string(std::cbegin(m_buffer), std::cend(m_buffer)));
+            length_prefixed_response _response(std::string(std::cbegin(m_buffer), std::cend(m_buffer)));
+            _client.response_sent(_server, _client, _response);
             _server.stop_writing(_client);
         }
     }
 }
 
-bool length_prefixed_writer::load(const std::string& message)
+bool length_prefixed_writer::load(const response& _response)
 {
-    if (message.empty())
+    auto resp = dynamic_cast<const length_prefixed_response*>(&_response);
+
+    if (!resp || resp->data.empty())
         return false;
     
-    m_buffer.resize(message.size());
-    std::copy(std::cbegin(message), std::cend(message), std::begin(m_buffer));
-    m_size = htonl(static_cast<uint32_t>(message.size()));
+    m_buffer.resize(resp->data.size());
+    std::copy(std::cbegin(resp->data), std::cend(resp->data), std::begin(m_buffer));
+    m_size = htonl(static_cast<uint32_t>(resp->data.size()));
     m_end = 0;
 
     return true;

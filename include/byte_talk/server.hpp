@@ -6,6 +6,8 @@
 #include "net/errors.hpp"
 #include "client.hpp"
 #include "logger.hpp"
+#include "request.hpp"
+#include "response.hpp"
 
 #include <boost/signals2.hpp>
 #include <vector>
@@ -22,8 +24,8 @@ class server
 public:
     boost::signals2::signal<void(server&, client&)> client_connected;
     boost::signals2::signal<void(server&, client&)> client_disconnected;
-    boost::signals2::signal<void(server&, client&, const std::string&)> message_received;
-    boost::signals2::signal<void(server&, client&, const std::string&)> message_written;
+    boost::signals2::signal<void(server&, client&, const request&)> request_received;
+    boost::signals2::signal<void(server&, client&, const response&)> response_sent;
 
 public:
     static constexpr uint32_t MAX_EVENTS = 10000;
@@ -35,7 +37,7 @@ public:
     void stop();
     bool is_running() const noexcept;
 
-    bool write_to(client& _client, const std::string& message);
+    bool write_to(client& _client, const response& _response);
     void disconnect(client& _client);
     void set_writing(client& _client, bool value);
     void start_writing(client& _client);

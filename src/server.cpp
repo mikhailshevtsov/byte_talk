@@ -24,9 +24,9 @@ bool server::is_running() const noexcept
     return m_is_running;
 }
 
-bool server::write_to(client& _client, const std::string& message)
+bool server::write_to(client& _client, const response& _response)
 {
-    if (_client.writer && _client.writer->load(message))
+    if (_client.writer && _client.writer->load(_response))
     {
         start_writing(_client);
         return true;
