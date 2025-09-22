@@ -29,18 +29,18 @@ int main()
         }
     );
 
-    echo.message_received.connect(
-        [&](bt::server& server, bt::client& client, const std::string& message)
+    echo.request_received.connect(
+        [&](bt::server& server, bt::client& client, const bt::request& request)
         {
-            std::cout << "New message from socket " << client.connector().fd() << " : " << message << "\n";
-            server.write_to(client, message);
+            std::cout << "New request from socket " << client.connector().fd() << " : " << request.data << "\n";
+            server.write_to(client, request.data);
         }
     );
 
-    echo.message_written.connect(
-        [&](bt::server& server, bt::client& client, const std::string& message)
+    echo.response_sent.connect(
+        [&](bt::server& server, bt::client& client, const bt::response& response)
         {
-            std::cout << "Send back message to socket " << client.connector().fd() << " : " << message << "\n";
+            std::cout << "Send response to socket " << client.connector().fd() << " : " << response.data << "\n";
         }
     );
 
