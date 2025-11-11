@@ -23,7 +23,7 @@ You can define a custom protocol by subclassing `bt::reader` and `bt::writer` cl
 
 
 ## 🚀 Installation
-```
+```cmake
 # CMake
 include(FetchContent)
 FetchContent_Declare(
