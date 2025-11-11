@@ -1,12 +1,43 @@
-# Minimalistic asynchronous multi-user server TCP framework
+# 🧩 byte_talk
+Minimalistic asynchronous server framework
 
-##  Description
 
-The framework allows you to efficiently handle thousands of concurrent connections in a single thread.
-Fully customizable. Different connections can use different data transfer protocols, both read and write. You can add your own protocol by overriding virtual methods of bt::reader and bt::writer classes. They are responsible for reading / writing data from the socket and notifying about receiving / sending new messages. Notifications are implemented using boost::signals. Each connection has its own signals, so you can treat each connection differently, or you can connect all the signals to the global server signals and treat all connections the same. Each connection also has a context, which can store additional information related to the client.
+## ✨ Features
+- Modern C++
+- Asynchronous and single-threaded event loop
+- Efficiently handles thousands of concurrent connections
+- Fully customisable, allows each connection to use its own protocols and callbacks for both reading and writing
 
-## Echo-server example
+
+## 📝 Description
+`byte_talk` allows you to efficiently handle thousands of simultaneous connections in a single thread. Each connection can use its own protocol for reading and writing data.
+You can define a custom protocol by subclassing `bt::reader` and `bt::writer` classes, which handle socket I/O and emit signals on message reception or completion. Signals are implemented using `boost::signals2` and are unique per connection - allowing fine-grained or global event handling. Each connection also maintains its own context to store user-defined state related to the client.
+
+
+## ⚙️ Requirements
+- 🧩 **C++20** or higher  
+- 🛠️ **CMake 3.28+**  
+- 🪶 **boost.signals2** — header-only dependency for event handling  
+- 🧱 **GCC 11+**, **Clang 14+**, or **MSVC 2022 (17.0+)**  
+- 🐧 **Linux-only** (uses epoll interface)
+
+
+## 🚀 Installation
 ```
+# CMake
+include(FetchContent)
+FetchContent_Declare(
+  byte_talk
+  GIT_REPOSITORY https://github.com/mikhailshevtsov/byte_talk.git
+  GIT_TAG main
+)
+FetchContent_MakeAvailable(byte_talk)
+target_link_libraries(your_project PRIVATE byte_talk)
+```
+
+
+## 💬 Echo-server example
+```cpp
 #include <byte_talk/server.hpp>
 #include <byte_talk/length_prefixed_proto.hpp>
 #include <iostream>
@@ -54,3 +85,7 @@ int main()
     return echo.run();
 }
 ```
+
+
+## 📜 License
+MIT License © 2025 Mikhail Shevtsov
