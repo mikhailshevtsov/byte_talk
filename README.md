@@ -25,9 +25,13 @@ You can define a custom protocol by subclassing `bt::reader` and `bt::writer` cl
 ## 🚀 Installation
 This library depends on Boost.Signals2 (header-only). Please make sure Boost is installed and available in your compiler's include path:
 - On Ubuntu/Debian:
-```bash sudo apt install libboost-signals-dev```
+```bash
+udo apt install libboost-signals-dev
+```
 - On Windows (vcpkg):
-```bash vcpkg install boost-signals2```
+```bash
+vcpkg install boost-signals2
+```
 - Using with CMake:
 ```cmake
 # CMake
