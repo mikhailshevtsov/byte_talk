@@ -23,8 +23,19 @@ You can define a custom protocol by subclassing `bt::reader` and `bt::writer` cl
 
 
 ## 🚀 Installation
+This library depends on Boost.Signals2 (header-only). Please make sure Boost is installed and available in your compiler's include path:
+- On Ubuntu/Debian:
+```bash sudo apt install libboost-signals-dev```
+- On Windows (vcpkg):
+```bash vcpkg install boost-signals2```
+- Using with CMake:
 ```cmake
 # CMake
+add_executable(my_app main.cpp)
+
+# Add Boost include directory if needed
+target_include_directories(my_app PRIVATE /path/to/boost)
+
 include(FetchContent)
 FetchContent_Declare(
   byte_talk
@@ -32,7 +43,9 @@ FetchContent_Declare(
   GIT_TAG main
 )
 FetchContent_MakeAvailable(byte_talk)
-target_link_libraries(your_project PRIVATE byte_talk)
+
+# Link your library
+target_link_libraries(my_app PRIVATE byte_talk)
 ```
 
 
