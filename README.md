@@ -26,7 +26,7 @@ You can define a custom protocol by subclassing `bt::reader` and `bt::writer` cl
 This library depends on Boost.Signals2 (header-only). Please make sure Boost is installed and available in your compiler's include path:
 - On Ubuntu/Debian:
 ```bash
-udo apt install libboost-signals-dev
+sudo apt install libboost-signals-dev
 ```
 - On Windows (vcpkg):
 ```bash
