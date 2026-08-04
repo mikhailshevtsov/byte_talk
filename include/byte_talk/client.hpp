@@ -1,39 +1,62 @@
 #ifndef BYTETALK_CLIENT_HPP
 #define BYTETALK_CLIENT_HPP
 
-#include "net/connector.hpp"
-#include "reader.hpp"
-#include "writer.hpp"
-#include "request.hpp"
-#include "response.hpp"
-
-#include <memory>
+#include <string_view>
 #include <any>
-#include <boost/signals2.hpp>
 
 namespace bt
 {
-    
-class client : public std::enable_shared_from_this<client>
+
+class server;
+
+class client
 {
-public:
-    client(net::connector&& connector) noexcept : m_connector{std::move(connector)} {}
-    client(const client& other) = delete;
-    client& operator=(const client& other) = delete;
-
-    boost::signals2::signal<void(server&, client&, const request&)> request_received;
-    boost::signals2::signal<void(server&, client&, const response&)> response_sent;
-
-    const net::connector& connector() const noexcept { return m_connector; }
-    
-    std::unique_ptr<bt::reader> reader;
-    std::unique_ptr<bt::writer> writer;
-    std::any context;
-
 private:
-    net::connector m_connector;
+    friend class server;
+    client(bt::server* server, std::size_t index);
+
+public:
+    client();
+    client(const client& other);
+    client& operator=(const client& other);
+    client(client&& other) noexcept;
+    client& operator=(client&& other) noexcept;
+    ~client();
+
+    bool operator==(const client& other) const;
+    bool operator!=(const client& other) const;
+
+    bool valid() const;
+    bool alive() const;
+
+    bt::server* server();
+    const bt::server* server() const;
+
+    std::size_t count() const;
+
+    int socket() const;
+
+    std::string_view read() const;
+    void send(std::string_view msg);
+
+    bool sent_all() const;
+
+    template <typename T>
+    void set_data(T&& data);
+
+    template <typename T>
+    T data_as() const;
+
+    const std::any& data() const;
+
+    void disconnect();
+    
+private:
+    bt::server* m_server{};
+    std::size_t m_index = -1;
 };
 
 }
 
-#endif //BYTETALK_CONNECTION_HPP
+
+#endif //BYTETALK_CLIENT_HPP

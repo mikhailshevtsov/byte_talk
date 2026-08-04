@@ -1,21 +1,21 @@
 #ifndef BYTETALK_NET_ACCEPTOR_HPP
 #define BYTETALK_NET_ACCEPTOR_HPP
 
+#include "basic_socket.hpp"
 #include "socket.hpp"
-#include "connector.hpp"
 
 namespace bt::net
 {
 
-struct acceptor : socket
+struct acceptor : basic_socket
 {
-    using socket::socket;
-    using socket::operator=;
+    using basic_socket::basic_socket;
+    using basic_socket::operator=;
 
-    void bind(short port) const;
-    void listen(int backlog) const;
+    int bind(short port) const;
+    int listen(int backlog = 5) const;
 
-    connector accept() const;
+    socket accept() const;
 };
 
 }

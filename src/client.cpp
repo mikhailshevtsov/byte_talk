@@ -1,0 +1,138 @@
+#include <byte_talk/client.hpp>
+#include <byte_talk/server.hpp>
+
+#include <utility>
+
+namespace bt
+{
+
+client::client(bt::server* server, std::size_t index)
+    : m_server{server}
+    , m_index{index}
+{
+    if (valid())
+        m_server->get_connection(m_index).inc();
+}
+
+client::client() = default;
+
+client::client(const client& other)
+    : m_server{other.m_server}
+    , m_index{other.m_index}
+{
+    if (valid())
+        m_server->get_connection(m_index).inc();
+}
+
+client& client::operator=(const client& other)
+{
+    client temp(other);
+    std::swap(temp, *this);
+    return *this;
+}
+
+client::client(client&& other) noexcept
+    : m_server(std::exchange(other.m_server, nullptr))
+    , m_index(std::exchange(other.m_index, 0))
+{}
+
+client& client::operator=(client&& other) noexcept
+{
+    client temp(std::move(other));
+    std::swap(temp, *this);
+    return *this;
+}
+
+client::~client()
+{
+    if (valid() && m_server->get_connection(m_index).dec() == 1)
+        m_server->free_connection(m_index);
+}
+
+bool client::operator==(const client& other) const
+{
+    return m_server == other.m_server && m_index == other.m_index;
+}
+
+bool client::operator!=(const client& other) const
+{
+    return !(*this == other);
+}
+
+bool client::valid() const
+{
+    return m_server;
+}
+
+bool client::alive() const
+{
+    return valid() && m_server->get_connection(m_index).sock.valid();
+}
+
+bt::server* client::server() { return m_server; }
+
+const bt::server* client::server() const { return m_server; }
+
+std::size_t client::count() const
+{
+    if (!valid())
+        return 0;
+    return m_server->get_connection(m_index).count;
+}
+
+int client::socket() const
+{
+    if (!valid())
+        return -1;
+    return m_server->get_connection(m_index).sock.fd();
+}
+
+std::string_view client::read() const
+{
+    if (!valid())
+        return {};
+    return m_server->get_connection(m_index).rbuf;
+}
+
+void client::send(std::string_view msg)
+{
+    if (!valid())
+        return;
+    m_server->get_connection(m_index).wbuf.push(msg);
+    m_server->set_writing(m_index, true);
+}
+
+bool client::sent_all() const
+{
+    if (!valid())
+        return false;
+    return m_server->get_connection(m_index).wbuf.empty();
+}
+
+template <typename T>
+void client::set_data(T&& data)
+{
+    if (!valid())
+        return;
+    m_server->get_connection(m_index).data = std::forward<T>(data);
+}
+
+template <typename T>
+T client::data_as() const
+{
+    return std::any_cast<T>(m_server->get_connection(m_index).data);
+}
+
+const std::any& client::data() const
+{
+    return m_server->get_connection(m_index).data;
+}
+
+void client::disconnect()
+{
+    if (!valid())
+        return;
+    m_server->disconnect(m_index);
+}
+
+}

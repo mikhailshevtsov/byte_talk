@@ -1,37 +1,37 @@
 #ifndef BYTETALK_NET_EPOLL_HPP
 #define BYTETALK_NET_EPOLL_HPP
 
-#include "socket.hpp"
+#include "basic_socket.hpp"
 
 #include <sys/epoll.h>
+#include <cstddef>
 
 namespace bt::net
 {
 
-struct epoll : socket
+struct epoll : basic_socket
 {
     struct event
     {
-        constexpr event(uint32_t events = {}, void* data_ptr = {}) noexcept
+        constexpr event(uint32_t events = {}, std::size_t index = 0) noexcept
         {
             ev.events = events;
-            ev.data.ptr = data_ptr;
+            ev.data.u64 = index;
         }
-        constexpr void* data() noexcept { return ev.data.ptr; }
-        constexpr const void* data() const noexcept { return ev.data.ptr; }
+        constexpr std::size_t index() noexcept { return ev.data.u64; }
         constexpr uint32_t events() const noexcept { return ev.events; }
 
         epoll_event ev{};
     };
 
-    using socket::socket;
-    using socket::operator=;
+    using basic_socket::basic_socket;
+    using basic_socket::operator=;
     static epoll create();
 
-    void add(const socket& sock, event e) const;
-    void mod(const socket& sock, event e) const;
-    void del(const socket& sock) const;
-    void ctl(int op, const socket& sock, event e = {}) const;
+    int add(const basic_socket& sock, event e) const;
+    int mod(const basic_socket& sock, event e) const;
+    int del(const basic_socket& sock) const;
+    int ctl(int op, const basic_socket& sock, event e = {}) const;
 
     int wait(event* events, int max_events) const;
 };
