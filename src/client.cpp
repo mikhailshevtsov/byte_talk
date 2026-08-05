@@ -109,23 +109,28 @@ bool client::sent_all() const
     return m_server->get_connection(m_index).wbuf.empty();
 }
 
-template <typename T>
-void client::set_data(T&& data)
-{
-    if (!valid())
-        return;
-    m_server->get_connection(m_index).data = std::forward<T>(data);
-}
-
-template <typename T>
-T client::data_as() const
-{
-    return std::any_cast<T>(m_server->get_connection(m_index).data);
-}
-
 const std::any& client::data() const
 {
     return m_server->get_connection(m_index).data;
+}
+
+std::any& client::data()
+{
+    return m_server->get_connection(m_index).data;
+}
+
+void client::set_data(const std::any& data)
+{
+    if (!valid())
+        return;
+    m_server->get_connection(m_index).data = data;
+}
+
+void client::set_data(std::any&& data)
+{
+    if (!valid())
+        return;
+    m_server->get_connection(m_index).data = std::move(data);
 }
 
 void client::disconnect()

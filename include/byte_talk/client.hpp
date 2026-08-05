@@ -4,6 +4,7 @@
 #include <string_view>
 #include <any>
 
+
 namespace bt
 {
 
@@ -41,13 +42,11 @@ public:
 
     bool sent_all() const;
 
-    template <typename T>
-    void set_data(T&& data);
-
-    template <typename T>
-    T data_as() const;
-
     const std::any& data() const;
+    std::any& data();
+
+    void set_data(const std::any& data);
+    void set_data(std::any&& data);
 
     void disconnect();
     
