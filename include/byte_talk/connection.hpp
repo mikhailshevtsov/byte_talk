@@ -28,15 +28,9 @@ struct connection : basic_connection
 
     connection(connection&& other) noexcept;
     connection& operator=(connection&& other) noexcept;
-    
-    connection(const connection&) noexcept = delete;
-    connection& operator=(const connection&) noexcept = delete;
 
     bool read();
     bool write();
-
-    void start(net::socket&& _sock);
-    void stop();
 
     void inc();
     std::size_t dec();

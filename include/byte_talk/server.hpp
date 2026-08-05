@@ -37,7 +37,6 @@ private:
     void set_writing(std::size_t index, bool value);
     connection& get_connection(std::size_t index);
     void free_connection(std::size_t index);
-
     void disconnect(std::size_t index);
 
     void print_error() const;

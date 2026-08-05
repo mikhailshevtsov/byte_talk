@@ -1,5 +1,7 @@
 #include <byte_talk/server.hpp>
 
+#include <iostream>
+
 namespace bt
 {
 
@@ -95,8 +97,11 @@ bool server::loop()
             }
 
             auto& conn = get_connection(index);
-            conn.start(std::move(sock));
+            conn.sock = std::move(sock);
             conn.inc();
+
+            conn.rbuf.clear();
+            conn.wbuf.clear();
 
             on_connected(client(this, index));
 
@@ -171,7 +176,7 @@ void server::disconnect(std::size_t index)
         return;
     on_disconnected(client(this, index));
     m_epoll.del(conn.sock);
-    conn.stop();
+    conn.sock.close();
     if (conn.dec() == 1)
         free_connection(index);
 }

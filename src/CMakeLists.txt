@@ -4,6 +4,7 @@ add_library(byte_talk
     buffer.cpp
     connection.cpp
     connection_pool.cpp
+    signal.cpp
 )
 add_subdirectory(net)
 target_link_libraries(byte_talk PRIVATE byte_talk_net)

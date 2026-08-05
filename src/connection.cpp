@@ -57,16 +57,6 @@ bool connection::write()
     return true;
 }
 
-void connection::start(net::socket&& _sock)
-{
-    sock = std::move(_sock);
-}
-
-void connection::stop()
-{
-    sock.close();
-}
-
 void connection::inc()
 {
     count.fetch_add(1, std::memory_order_relaxed);
