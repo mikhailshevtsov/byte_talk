@@ -73,6 +73,11 @@ bt::server* client::server() { return m_server; }
 
 const bt::server* client::server() const { return m_server; }
 
+std::size_t client::index() const
+{
+    return m_index;
+}
+
 std::size_t client::count() const
 {
     if (!valid())
