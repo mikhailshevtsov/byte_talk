@@ -27,7 +27,7 @@ client::client(const client& other)
 client& client::operator=(const client& other)
 {
     client temp(other);
-    std::swap(temp, *this);
+    swap(temp);
     return *this;
 }
 
@@ -39,7 +39,7 @@ client::client(client&& other) noexcept
 client& client::operator=(client&& other) noexcept
 {
     client temp(std::move(other));
-    std::swap(temp, *this);
+    swap(temp);
     return *this;
 }
 
@@ -138,6 +138,12 @@ void client::disconnect()
     if (!valid())
         return;
     m_server->disconnect(m_index);
+}
+
+void client::swap(client& other)
+{
+    std::swap(m_server, other.m_server);
+    std::swap(m_index, other.m_index);
 }
 
 }

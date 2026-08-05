@@ -33,6 +33,8 @@ public:
     bt::server* server();
     const bt::server* server() const;
 
+    std::size_t index() const;
+
     std::size_t count() const;
 
     int socket() const;
@@ -49,6 +51,8 @@ public:
     void set_data(std::any&& data);
 
     void disconnect();
+
+    void swap(client& other);
     
 private:
     bt::server* m_server{};

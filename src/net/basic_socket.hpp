@@ -12,7 +12,7 @@ public:
     explicit basic_socket(int sockfd) noexcept;
 
     basic_socket(basic_socket&& other) noexcept;
-    basic_socket& operator=(basic_socket&& other) & noexcept;
+    basic_socket& operator=(basic_socket&& other) noexcept;
 
     basic_socket(const basic_socket& other) = delete;
     basic_socket& operator=(const basic_socket& other) = delete;
@@ -32,7 +32,8 @@ public:
     bool valid() const noexcept;
 
     explicit operator bool() const noexcept;
-    bool operator==(const basic_socket& other) const noexcept = default;
+    bool operator==(const basic_socket& other) const noexcept;
+    bool operator!=(const basic_socket& other) const noexcept;
 
 private:
     int m_sockfd = -1;

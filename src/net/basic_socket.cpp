@@ -25,9 +25,10 @@ basic_socket::basic_socket(basic_socket&& other) noexcept
     : m_sockfd{other.release()}
 {}
 
-basic_socket& basic_socket::operator=(basic_socket&& other) & noexcept
+basic_socket& basic_socket::operator=(basic_socket&& other) noexcept
 {
-    swap(other);
+    basic_socket temp(std::move(other));
+    swap(temp);
     return *this;
 }
 
@@ -39,6 +40,16 @@ void basic_socket::swap(basic_socket& other) noexcept
 basic_socket::operator bool() const noexcept
 {
     return valid();
+}
+
+bool basic_socket::operator==(const basic_socket& other) const noexcept
+{
+    return m_sockfd == other.m_sockfd;
+}
+
+bool basic_socket::operator!=(const basic_socket& other) const noexcept
+{
+    return !(*this == other);
 }
 
 void basic_socket::reset() noexcept
