@@ -14,18 +14,21 @@ namespace bt
 class server
 {
 public:
-    signal on_connected;
-    signal on_disconnected;
+    signal on_opened;
+    signal on_closed;
     signal on_read;
     signal on_sent;
 
 public:
-    explicit server(short port);
+    explicit server(short port, std::size_t max_conn = 10000);
 
     int run();
 
     void stop();
     bool is_running() const;
+
+    std::size_t port() const;
+    std::size_t max_connections() const;
 
 public:
     bool setup();
@@ -37,11 +40,10 @@ private:
     void set_writing(std::size_t index, bool value);
     connection& get_connection(std::size_t index);
     void free_connection(std::size_t index);
-    void disconnect(std::size_t index);
+    void close(std::size_t index);
 
     void print_error() const;
     
-    static constexpr uint32_t MAX_EVENTS = 10000;
     static constexpr uint32_t EVENTS = EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR;
 
 private:

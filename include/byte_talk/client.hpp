@@ -42,6 +42,9 @@ public:
     std::string_view read() const;
     void send(std::string_view msg);
 
+    void send();
+
+    std::size_t bytes_to_send() const;
     bool sent_all() const;
 
     const std::any& data() const;
@@ -50,7 +53,7 @@ public:
     void set_data(const std::any& data);
     void set_data(std::any&& data);
 
-    void disconnect();
+    void close();
 
     void swap(client& other);
     

@@ -12,21 +12,17 @@ connection_pool::connection_pool(std::size_t size)
 
 std::size_t connection_pool::acquire()
 {
+    std::lock_guard<std::mutex> lg(m_mtx);
     if (full())
-    {
-        std::size_t size = m_connections.size();
-        m_connections.resize(size * 2);
-        for (std::size_t i = size; i < size * 2; ++i)
-            m_free_indices.push(i);
-    }
-
-    std::size_t index = m_free_indices.front();
+        return std::size_t(-1);
+    std::size_t free_index = m_free_indices.front();
     m_free_indices.pop();
-    return index;
+    return free_index;
 }
 
 void connection_pool::release(std::size_t index)
 {
+    std::lock_guard<std::mutex> lg(m_mtx);
     m_free_indices.push(index);
 }
 

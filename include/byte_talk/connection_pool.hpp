@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <queue>
+#include <mutex>
 
 
 namespace bt
@@ -27,6 +28,7 @@ public:
 private:
     std::vector<connection> m_connections;
     std::queue<std::size_t> m_free_indices;
+    std::mutex m_mtx;
 };
 
 }

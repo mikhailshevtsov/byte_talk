@@ -104,14 +104,24 @@ void client::send(std::string_view msg)
     if (!valid())
         return;
     m_server->get_connection(m_index).wbuf.push(msg);
+    send();
+}
+
+void client::send()
+{
     m_server->set_writing(m_index, true);
+}
+
+std::size_t client::bytes_to_send() const
+{
+    if (!valid())
+        return 0;
+    return m_server->get_connection(m_index).wbuf.size();
 }
 
 bool client::sent_all() const
 {
-    if (!valid())
-        return false;
-    return m_server->get_connection(m_index).wbuf.empty();
+    return bytes_to_send() == 0;
 }
 
 const std::any& client::data() const
@@ -138,11 +148,11 @@ void client::set_data(std::any&& data)
     m_server->get_connection(m_index).data = std::move(data);
 }
 
-void client::disconnect()
+void client::close()
 {
     if (!valid())
         return;
-    m_server->disconnect(m_index);
+    m_server->close(m_index);
 }
 
 void client::swap(client& other)

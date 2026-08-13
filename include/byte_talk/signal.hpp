@@ -26,7 +26,7 @@ public:
     void operator()(client _client);
 
 private:
-    std::vector<std::function<void(client)>> m_slots;
+    std::vector<function> m_slots;
 };
 
 }

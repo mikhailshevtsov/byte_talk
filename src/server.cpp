@@ -5,10 +5,10 @@
 namespace bt
 {
 
-server::server(short port)
+server::server(short port, std::size_t max_conn)
     : m_port{port}
-    , m_events(MAX_EVENTS)
-    , m_connections(MAX_EVENTS)
+    , m_events(max_conn)
+    , m_connections(max_conn)
 {}
 
 void server::stop()
@@ -19,6 +19,16 @@ void server::stop()
 bool server::is_running() const
 {
     return m_is_running;
+}
+
+std::size_t server::port() const
+{
+    return m_port;
+}
+
+std::size_t server::max_connections() const
+{
+    return m_connections.size();
 }
 
 int server::run()
@@ -88,11 +98,16 @@ bool server::loop()
                 continue;
 
             std::size_t index = m_connections.acquire();
+            if (index == std::size_t(-1))
+            {
+                std::cerr << "Maximum connections limit exceeded\n";
+                continue;
+            }
             
             res = m_epoll.add(sock, {EVENTS, index});
             if (res < 0)
             {
-                disconnect(index);
+                close(index);
                 continue;
             }
 
@@ -103,7 +118,7 @@ bool server::loop()
             conn.rbuf.clear();
             conn.wbuf.clear();
 
-            on_connected(client(this, index));
+            on_opened(client(this, index));
 
             continue;
         }
@@ -115,7 +130,7 @@ bool server::loop()
         // close event
         if (events & EPOLLHUP || events & EPOLLRDHUP || events & EPOLLERR)
         {
-            disconnect(index);
+            close(index);
             continue;
         }
 
@@ -128,7 +143,7 @@ bool server::loop()
                 conn.rbuf.clear();
             }
             else
-                disconnect(index);
+                close(index);
         }
 
         // output event
@@ -141,7 +156,7 @@ bool server::loop()
                     set_writing(index, false);
             }
             else
-                disconnect(index);
+                close(index);
         }
     }
 
@@ -156,7 +171,7 @@ void server::set_writing(std::size_t index, bool value)
 
     int res = m_epoll.mod(conn.sock, {events, index});
     if (res < 0)
-        disconnect(index);
+        close(index);
 }
 
 connection& server::get_connection(std::size_t index)
@@ -169,12 +184,12 @@ void server::free_connection(std::size_t index)
     m_connections.release(index);
 }
 
-void server::disconnect(std::size_t index)
+void server::close(std::size_t index)
 {
     auto& conn = get_connection(index);
     if (!conn.sock.valid())
         return;
-    on_disconnected(client(this, index));
+    on_closed(client(this, index));
     m_epoll.del(conn.sock);
     conn.sock.close();
     if (conn.dec() == 1)
