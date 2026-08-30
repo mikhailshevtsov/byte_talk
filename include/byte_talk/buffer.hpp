@@ -25,8 +25,9 @@ public:
     std::size_t size() const;
     std::size_t capacity() const;
 
-    void add_bytes(std::size_t size);
-    void extend(std::size_t size);
+    void add_bytes(std::size_t n);
+    void extend(std::size_t n);
+    //void resize(std::size_t n);
 
     void clear();
 

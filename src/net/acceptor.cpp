@@ -13,12 +13,12 @@ int acceptor::bind(short port) const
     addr.sin_port = htons(port);
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    return ::bind(fd(), (sockaddr*)&addr, sizeof(addr));
+    return ::bind(get(), (sockaddr*)&addr, sizeof(addr));
 }
 
 int acceptor::listen(int backlog) const
 {
-    return ::listen(fd(), backlog);
+    return ::listen(get(), backlog);
 }
 
 socket acceptor::accept() const
@@ -26,7 +26,7 @@ socket acceptor::accept() const
     sockaddr_in addr{};
     socklen_t addrlen{};
 
-    int sockfd = ::accept(fd(), (sockaddr*)&addr, &addrlen);
+    int sockfd = ::accept(get(), (sockaddr*)&addr, &addrlen);
     return socket{sockfd};
 }
 

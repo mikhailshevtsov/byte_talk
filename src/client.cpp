@@ -6,159 +6,123 @@
 namespace bt
 {
 
-client::client(bt::server* server, std::size_t index)
-    : m_server{server}
-    , m_index{index}
-{
-    if (valid())
-        m_server->get_connection(m_index).inc();
-}
+client::client(bt::server* _server, connection* conn)
+    : _server{_server}
+    , _conn{conn}
+    , _age{conn->age}
+{}
 
 client::client() = default;
 
-client::client(const client& other)
-    : m_server{other.m_server}
-    , m_index{other.m_index}
+client::operator bool() const
 {
-    if (valid())
-        m_server->get_connection(m_index).inc();
-}
-
-client& client::operator=(const client& other)
-{
-    client temp(other);
-    swap(temp);
-    return *this;
-}
-
-client::client(client&& other) noexcept
-    : m_server(std::exchange(other.m_server, nullptr))
-    , m_index(std::exchange(other.m_index, 0))
-{}
-
-client& client::operator=(client&& other) noexcept
-{
-    client temp(std::move(other));
-    swap(temp);
-    return *this;
-}
-
-client::~client()
-{
-    if (valid() && m_server->get_connection(m_index).dec() == 1)
-        m_server->free_connection(m_index);
-}
-
-bool client::operator==(const client& other) const
-{
-    return m_server == other.m_server && m_index == other.m_index;
-}
-
-bool client::operator!=(const client& other) const
-{
-    return !(*this == other);
+    return valid();
 }
 
 bool client::valid() const
 {
-    return m_server;
+    return _server && _conn;
 }
 
 bool client::alive() const
 {
-    return valid() && m_server->get_connection(m_index).sock.valid();
+    return valid() && _conn->alive && _conn->age == _age;
 }
 
-bt::server* client::server() { return m_server; }
-
-const bt::server* client::server() const { return m_server; }
-
-std::size_t client::index() const
+bt::server* client::server() const
 {
-    return m_index;
-}
-
-std::size_t client::count() const
-{
-    if (!valid())
-        return 0;
-    return m_server->get_connection(m_index).count;
+    return _server;
 }
 
 int client::socket() const
 {
-    if (!valid())
+    if (!alive())
         return -1;
-    return m_server->get_connection(m_index).sock.fd();
+    return _conn->sock.get();
 }
 
 std::string_view client::read() const
 {
-    if (!valid())
+    if (!alive())
         return {};
-    return m_server->get_connection(m_index).rbuf;
-}
-
-void client::send(std::string_view msg)
-{
-    if (!valid())
-        return;
-    m_server->get_connection(m_index).wbuf.push(msg);
-    send();
-}
-
-void client::send()
-{
-    m_server->set_writing(m_index, true);
+    return _conn->rbuf;
 }
 
 std::size_t client::bytes_to_send() const
 {
-    if (!valid())
+    if (!alive())
         return 0;
-    return m_server->get_connection(m_index).wbuf.size();
+    return _conn->wbuf.size();
 }
 
 bool client::sent_all() const
 {
+    if (!alive())
+        return false;
     return bytes_to_send() == 0;
 }
 
-const std::any& client::data() const
+const void* client::data() const
 {
-    return m_server->get_connection(m_index).data;
+    if (!alive())
+        return nullptr;
+    return _conn->data;
 }
 
-std::any& client::data()
+void* client::data()
 {
-    return m_server->get_connection(m_index).data;
+    if (!alive())
+        return nullptr;
+    return _conn->data;
 }
 
-void client::set_data(const std::any& data)
+void client::set_data(void* data)
 {
-    if (!valid())
+    if (!alive())
         return;
-    m_server->get_connection(m_index).data = data;
+    _conn->data = data;
 }
 
-void client::set_data(std::any&& data)
+void client::set_timeout(timeout_t timeout)
 {
-    if (!valid())
+    if (!alive())
         return;
-    m_server->get_connection(m_index).data = std::move(data);
+    _server->set_timeout(*this, timeout);
+}
+
+deadline_t client::deadline() const
+{
+    if (!alive())
+        return {};
+    return _conn->deadline;
+}
+
+std::size_t client::index() const
+{
+    if (!alive())
+        return -1;
+    return _server->index_of(*this);
+}
+
+void client::send(std::string_view msg)
+{
+    if (!alive())
+        return;
+    _server->send_to(*this, msg);
+}
+
+void client::send()
+{
+    if (!alive())
+        return;
+    _server->send_to(*this);
 }
 
 void client::close()
 {
-    if (!valid())
+    if (!alive())
         return;
-    m_server->close(m_index);
-}
-
-void client::swap(client& other)
-{
-    std::swap(m_server, other.m_server);
-    std::swap(m_index, other.m_index);
+    _server->close(*this);
 }
 
 }

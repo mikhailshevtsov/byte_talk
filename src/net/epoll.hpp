@@ -13,12 +13,13 @@ struct epoll : basic_socket
 {
     struct event
     {
-        constexpr event(uint32_t events = {}, std::size_t index = 0) noexcept
+        constexpr event(uint32_t events = {}, void* data = 0) noexcept
         {
             ev.events = events;
-            ev.data.u64 = index;
+            ev.data.ptr = data;
         }
-        constexpr std::size_t index() noexcept { return ev.data.u64; }
+        constexpr void* data() noexcept { return ev.data.ptr; }
+        constexpr const void* data() const noexcept { return ev.data.ptr; }
         constexpr uint32_t events() const noexcept { return ev.events; }
 
         epoll_event ev{};

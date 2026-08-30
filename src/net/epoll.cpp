@@ -5,7 +5,7 @@ namespace bt::net
 
 epoll epoll::create()
 {
-    int sockfd = epoll_create1(0);
+    int sockfd = epoll_create1(EPOLL_CLOEXEC);
     return epoll{sockfd};
 }
 
@@ -26,12 +26,12 @@ int epoll::del(const basic_socket& sock) const
 
 int epoll::ctl(int op, const basic_socket& sock, event e) const
 {
-    return epoll_ctl(fd(), op, sock.fd(), reinterpret_cast<epoll_event*>(&e));
+    return epoll_ctl(get(), op, sock.get(), reinterpret_cast<epoll_event*>(&e));
 }
 
 int epoll::wait(event* events, int max_events) const
 {
-    return epoll_wait(fd(), reinterpret_cast<epoll_event*>(events), max_events, -1);
+    return epoll_wait(get(), reinterpret_cast<epoll_event*>(events), max_events, -1);
 }
 
 }

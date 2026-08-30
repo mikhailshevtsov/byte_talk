@@ -1,0 +1,3 @@
+add_executable(byte_talk_examples byte_talk_example.cpp)
+
+target_link_libraries(byte_talk_examples PRIVATE byte_talk)

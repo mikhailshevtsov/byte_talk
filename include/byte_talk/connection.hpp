@@ -2,38 +2,35 @@
 #define BYTETALK_CONNECTION_HPP
 
 #include "net/socket.hpp"
+#include "net/ssl.hpp"
 #include "buffer.hpp"
+#include "timeout.hpp"
 
-#include <any>
-#include <atomic>
-
+#include <chrono>
 
 namespace bt
 {
     
-struct basic_connection
+struct connection
 {
     net::socket sock;
+    net::ssl ssl;
+
     buffer rbuf;
     buffer wbuf;
-    std::any data;
-    std::atomic_size_t count{0};
-};
+    
+    void* data{};
 
-struct connection : basic_connection
-{
-    std::atomic_size_t count{0};
+    std::size_t age = 0;
+    bool alive = false;
 
-    connection() = default;
+    deadline_t deadline;
 
-    connection(connection&& other) noexcept;
-    connection& operator=(connection&& other) noexcept;
+    ssize_t read();
+    ssize_t write();
 
-    bool read();
-    bool write();
-
-    void inc();
-    std::size_t dec();
+    void revive(net::socket _sock, net::ssl _ssl);
+    void kill();
 };
 
 }

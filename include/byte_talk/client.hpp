@@ -1,8 +1,9 @@
 #ifndef BYTETALK_CLIENT_HPP
 #define BYTETALK_CLIENT_HPP
 
+#include "connection.hpp"
+
 #include <string_view>
-#include <any>
 
 
 namespace bt
@@ -14,52 +15,39 @@ class client
 {
 private:
     friend class server;
-    client(bt::server* server, std::size_t index);
+    client(bt::server* _server, connection* conn);
 
 public:
     client();
-    client(const client& other);
-    client& operator=(const client& other);
-    client(client&& other) noexcept;
-    client& operator=(client&& other) noexcept;
-    ~client();
 
-    bool operator==(const client& other) const;
-    bool operator!=(const client& other) const;
+    bool operator==(const client& other) const = default;
+    operator bool() const;
 
     bool valid() const;
     bool alive() const;
 
-    bt::server* server();
-    const bt::server* server() const;
+    bt::server* server() const;
+    int socket() const;
+    std::string_view read() const;
+    std::size_t bytes_to_send() const;
+    bool sent_all() const;
+    const void* data() const;
+    void* data();
+    void set_data(void* data);
+
+    void set_timeout(timeout_t timeout);
+    deadline_t deadline() const;
 
     std::size_t index() const;
 
-    std::size_t count() const;
-
-    int socket() const;
-
-    std::string_view read() const;
     void send(std::string_view msg);
-
     void send();
-
-    std::size_t bytes_to_send() const;
-    bool sent_all() const;
-
-    const std::any& data() const;
-    std::any& data();
-
-    void set_data(const std::any& data);
-    void set_data(std::any&& data);
-
     void close();
-
-    void swap(client& other);
     
 private:
-    bt::server* m_server{};
-    std::size_t m_index = -1;
+    bt::server* _server{};
+    connection* _conn{};
+    std::size_t _age{};
 };
 
 }

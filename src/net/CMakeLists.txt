@@ -1,7 +1,12 @@
 add_library(byte_talk_net
-    basic_socket.hpp basic_socket.cpp
-    acceptor.hpp acceptor.cpp
-    socket.hpp socket.cpp
-    epoll.hpp epoll.cpp
+    basic_socket.cpp
+    acceptor.cpp
+    socket.cpp
+    epoll.cpp
+    ssl.cpp
+    ssl_context.cpp
+    timer.cpp
 )
-target_compile_features(byte_talk_net PUBLIC cxx_std_20)
+
+find_package(OpenSSL REQUIRED)
+target_link_libraries(byte_talk_net PUBLIC OpenSSL::SSL)
