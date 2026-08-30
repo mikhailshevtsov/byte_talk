@@ -4,46 +4,55 @@ namespace bt
 {
 
 connection_pool::connection_pool(std::size_t size)
-    : m_connections(size)
+    : _connections(size)
 {
-    for (std::size_t i = 0; i < size; ++i)
-        m_free_indices.push(i);
+    for (std::size_t i = size; i > 0;)
+        _free_indices.push(--i);
 }
 
-std::size_t connection_pool::acquire()
+connection* connection_pool::acquire()
 {
-    std::lock_guard<std::mutex> lg(m_mtx);
     if (full())
-        return std::size_t(-1);
-    std::size_t free_index = m_free_indices.front();
-    m_free_indices.pop();
-    return free_index;
+        return nullptr;
+    std::size_t index = _free_indices.top();
+    _free_indices.pop();
+    return &_connections[index];
 }
 
 void connection_pool::release(std::size_t index)
 {
-    std::lock_guard<std::mutex> lg(m_mtx);
-    m_free_indices.push(index);
+    if (index < size())
+        _free_indices.push(index);
+}
+
+void connection_pool::release(connection* conn)
+{
+    release(index_of(conn));
 }
 
 connection& connection_pool::operator[](std::size_t index)
 {
-    return m_connections[index];
+    return _connections[index];
 }
 
 std::size_t connection_pool::size() const
 {
-    return m_connections.size();
+    return _connections.size();
 }
 
 std::size_t connection_pool::free_size() const
 {
-    return m_free_indices.size();
+    return _free_indices.size();
 }
 
 std::size_t connection_pool::full() const
 {
-    return m_free_indices.empty();
+    return _free_indices.empty();
+}
+
+std::size_t connection_pool::index_of(connection* conn) const
+{
+    return conn - _connections.data();
 }
 
 }

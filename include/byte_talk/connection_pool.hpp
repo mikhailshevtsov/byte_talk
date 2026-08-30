@@ -4,8 +4,7 @@
 #include "connection.hpp"
 
 #include <vector>
-#include <queue>
-#include <mutex>
+#include <stack>
 
 
 namespace bt
@@ -16,8 +15,9 @@ class connection_pool
 public:
     explicit connection_pool(std::size_t size);
 
-    std::size_t acquire();
+    connection* acquire();
     void release(std::size_t index);
+    void release(connection* conn);
 
     connection& operator[](std::size_t index);
     
@@ -25,10 +25,11 @@ public:
     std::size_t free_size() const;
     std::size_t full() const;
 
+    std::size_t index_of(connection* conn) const;
+
 private:
-    std::vector<connection> m_connections;
-    std::queue<std::size_t> m_free_indices;
-    std::mutex m_mtx;
+    std::vector<connection> _connections;
+    std::stack<std::size_t> _free_indices;
 };
 
 }

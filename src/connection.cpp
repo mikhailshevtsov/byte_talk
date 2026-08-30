@@ -1,48 +1,48 @@
 #include <byte_talk/connection.hpp>
 
+#include <cerrno>
+
 namespace bt
 {
 
-connection::connection(connection&& other) noexcept
-    : count(other.count.load())
-{}
-
-connection& connection::operator=(connection&& other) noexcept
+ssize_t connection::read()
 {
-    connection tmp(std::move(other));
-    std::swap(*this, tmp);
-    return *this;
-}
-
-bool connection::read()
-{
+    if (!sock)
+        return -1;
+    std::size_t _read = 0;
     while (true)
     {
         if (rbuf.full())
             rbuf.extend(rbuf.size());
 
-        ssize_t n = sock.read(rbuf.last(), rbuf.bytes_left());
+        auto [data, size] = std::make_pair(rbuf.last(), rbuf.bytes_left());    
+        ssize_t n = ssl ? ssl.read(data, size) : sock.read(data, size);
 
         if (n > 0)
+        {
             rbuf.add_bytes(n);
+            _read += n;
+        }
         else if (errno == EAGAIN || errno == EWOULDBLOCK)
             break;
         else if (errno == EINTR)
             continue;
         else
-            return false;
+            return n;
     }
-    return true;
+    return _read;
 }
 
-bool connection::write()
+ssize_t connection::write()
 {
+    if (!sock)
+        return -1;
     std::size_t total = wbuf.size();
     std::size_t sent = 0;
-
     while (sent < total)
     {
-        ssize_t n = sock.write(wbuf.at(sent), total - sent);
+        auto [data, size] = std::make_pair(wbuf.at(sent), total - sent);
+        ssize_t n = ssl ? ssl.write(data, size) : sock.write(data, size);
 
         if (n > 0)
             sent += n;
@@ -51,20 +51,33 @@ bool connection::write()
         else if (errno == EINTR)
             continue;
         else
-            return false;
+            return n;
     }
     wbuf.pop(sent);
-    return true;
+    return sent;
 }
 
-void connection::inc()
+void connection::revive(net::socket _sock, net::ssl _ssl)
 {
-    count.fetch_add(1, std::memory_order_relaxed);
+    sock = std::move(_sock);
+    ssl = std::move(_ssl);
+    rbuf.clear();
+    wbuf.clear();
+    data = nullptr;
+    alive = true;
+    deadline = {};
 }
 
-std::size_t connection::dec()
+void connection::kill()
 {
-    return count.fetch_sub(1, std::memory_order_acq_rel);
+    sock.close();
+    ssl.close();
+    rbuf.clear();
+    wbuf.clear();
+    data = nullptr;
+    alive = false;
+    ++age;
+    deadline = {};
 }
 
 }

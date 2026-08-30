@@ -1,42 +1,22 @@
 #ifndef BYTETALK_NET_BASICSOCKET_HPP
 #define BYTETALK_NET_BASICSOCKET_HPP
 
+#include "unique_resource.hpp"
+
+#include <unistd.h>
+
 namespace bt::net
 {
 
-class basic_socket
+void basic_socket_destructor(int fd);
+
+struct basic_socket : unique_resource<int, basic_socket_destructor, -1>
 {
-public:
-    basic_socket() noexcept;
-    ~basic_socket();
-    explicit basic_socket(int sockfd) noexcept;
-
-    basic_socket(basic_socket&& other) noexcept;
-    basic_socket& operator=(basic_socket&& other) noexcept;
-
-    basic_socket(const basic_socket& other) = delete;
-    basic_socket& operator=(const basic_socket& other) = delete;
-
-public:
-    void swap(basic_socket& other) noexcept;
-    void reset() noexcept;
-    int release() noexcept;
-
-    int close();
+    using unique_resource<int, basic_socket_destructor, -1>::unique_resource;
+    using unique_resource<int, basic_socket_destructor, -1>::operator=;
 
     bool non_blocking() const;
     int set_nonblocking(bool value);
-
-public:
-    int fd() const noexcept;
-    bool valid() const noexcept;
-
-    explicit operator bool() const noexcept;
-    bool operator==(const basic_socket& other) const noexcept;
-    bool operator!=(const basic_socket& other) const noexcept;
-
-private:
-    int m_sockfd = -1;
 };
 
 // make non-blocking basic_socket

@@ -3,10 +3,14 @@
 
 #include "net/acceptor.hpp"
 #include "net/epoll.hpp"
+#include "net/ssl_context.hpp"
+#include "net/timer.hpp"
+#include "config.hpp"
 #include "signal.hpp"
 #include "connection_pool.hpp"
+#include "timeout.hpp"
 
-#include <atomic>
+#include <queue>
 
 namespace bt
 {
@@ -20,41 +24,71 @@ public:
     signal on_sent;
 
 public:
-    explicit server(short port, std::size_t max_conn = 10000);
-
-    int run();
-
-    void stop();
-    bool is_running() const;
-
-    std::size_t port() const;
-    std::size_t max_connections() const;
+    explicit server(const config& cfg);
+    const bt::config& config() const;
 
 public:
-    bool setup();
-    bool loop();
+    int run();
 
 private:
-    friend class client;
-    
-    void set_writing(std::size_t index, bool value);
-    connection& get_connection(std::size_t index);
-    void free_connection(std::size_t index);
-    void close(std::size_t index);
+    int setup();
+    int loop();
 
+    bool is_timer_fired(const net::epoll::event& event) const;
+    bool is_opened(const net::epoll::event& event) const;
+    bool is_closed(const net::epoll::event& event) const;
+    bool is_read(const net::epoll::event& event) const;
+    bool is_sent(const net::epoll::event& event) const;
+
+    int timer_fired(connection* conn = nullptr);
+    int opened(connection* conn = nullptr);
+    int closed(connection* conn);
+    int read(connection* conn);
+    int sent(connection* conn);
+
+    int handle_event(int(server::*callback)(connection*), connection* conn);
+
+    void set_timeout(connection* conn, timeout_t timeout);
+    void set_writing(connection* conn, bool value);
     void print_error() const;
-    
+
     static constexpr uint32_t EVENTS = EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR;
 
-private:
-    short m_port{};
-    std::atomic_bool m_is_running = false;
-    
-    net::epoll m_epoll{};
-    std::vector<net::epoll::event> m_events;
+public:
+    void send_to(client _client, std::string_view msg);
+    void send_to(client _client);
+    void close(client _client);
+    void set_timeout(client _client, timeout_t timeout);
 
-    net::acceptor m_acceptor{}; 
-    connection_pool m_connections;
+    std::size_t index_of(client _client) const;
+
+private:
+    bt::config _cfg;
+
+    net::epoll _epoll{};
+    std::vector<net::epoll::event> _events;
+    net::acceptor _acceptor{}; 
+    connection_pool _connections;
+    net::ssl_context _ssl_ctx{};
+    net::timer _timer{};
+
+    struct timeout_manager
+    {
+        connection* conn;
+        std::size_t age{};
+        deadline_t deadline;
+    };
+
+    struct timeout_manager_compare
+    {
+        bool operator()(const timeout_manager& tm1, const timeout_manager& tm2) const
+        {
+            return tm1.deadline > tm2.deadline;
+        }
+    };
+
+    std::priority_queue<timeout_manager, std::vector<timeout_manager>, timeout_manager_compare> _timeouts;
+    int _interval = 1; //seconds
 };
 
 }
